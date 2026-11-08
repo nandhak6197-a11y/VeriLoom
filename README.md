@@ -1,5 +1,8 @@
 # VeriLoom: Guidelines as an Executable Specification (Round 2 MVP)
 
+> **Live Deployment URL**: [https://7f93f4138f7f3d.lhr.life](https://7f93f4138f7f3d.lhr.life)  
+> **Source Repository**: [https://github.com/nandhak6197-a11y/VeriLoom](https://github.com/nandhak6197-a11y/VeriLoom)
+
 **VeriLoom** is an enterprise neuro-symbolic brand, claim, accessibility, and visual compliance verification platform. Instead of relying on a single-prompt language model that drifts across runs, fabricates rule citations, and overwrites creator voice, VeriLoom compiles prose guidelines into a **Versioned Deontic Brand-AST**, links quantified claims to a **Time-Bounded Fact Vault**, executes **deterministic colorimetry & WCAG luminance math** on visual assets, and generates **Intent-Locked Surgical Rewrites** ($\text{IPM} \ge 0.85$) backed by a **SHA-256 hash-chained audit ledger**.
 
 ---
