@@ -1,7 +1,7 @@
 @echo off
-title VeriLoom Persistent Daemon Watchdog
+title VeriLoom Cloudflare 24/7 Watchdog
 echo =================================================================
-echo   VeriLoom Persistent 24/7 Watchdog (Survives IDE Restarts)
+echo   VeriLoom Cloudflare 24/7 Watchdog (Survives IDE Restarts)
 echo =================================================================
 cd /d "C:\Users\NANDHA K\Documents\antigravity\valiant-turing"
 
@@ -14,11 +14,11 @@ if %ERRORLEVEL% neq 0 (
     timeout /t 3 >nul
 )
 
-:: 2. Check if localtunnel is running
-tasklist /fi "imagename eq node.exe" | findstr node.exe >nul 2>&1
+:: 2. Check if cloudflared is running
+tasklist /fi "imagename eq cloudflared.exe" | findstr cloudflared.exe >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo [%date% %time%] Tunnel not detected. Starting localtunnel on https://veriloom-round2.loca.lt...
-    start /min "VeriLoom_Tunnel" cmd /c "npx -y localtunnel --port 8000 --subdomain veriloom-round2"
+    echo [%date% %time%] Cloudflare Tunnel not detected. Restarting cloudflared...
+    start /min "VeriLoom_Cloudflare" "cloudflared.exe" tunnel --url http://127.0.0.1:8000
 )
 
 :: Sleep 10 seconds before next health check
