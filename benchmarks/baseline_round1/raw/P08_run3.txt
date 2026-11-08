@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "ACC-03",
+      "quote": "Click here",
+      "explanation": "Link text must describe destination"
+    }
+  ]
+}

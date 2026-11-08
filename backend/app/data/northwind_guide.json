@@ -1,0 +1,409 @@
+{
+  "tenant": "northwind_academy",
+  "guide_name": "Northwind Academy Brand & Content Specification",
+  "version": "v1.0.0",
+  "brand_palette": [
+    {"name": "Northwind Navy", "hex": "#0F2B48", "rgb": [15, 43, 72]},
+    {"name": "Northwind Royal Blue", "hex": "#2563EB", "rgb": [37, 99, 235]},
+    {"name": "Slate Neutral", "hex": "#475569", "rgb": [71, 85, 105]},
+    {"name": "Canvas White", "hex": "#F8FAFC", "rgb": [248, 250, 252]},
+    {"name": "Emerald Verified", "hex": "#166534", "rgb": [22, 101, 52]}
+  ],
+  "logo_spec": {
+    "aspect_ratio": 4.0,
+    "tolerance": 0.05,
+    "min_clear_space_px": 16
+  },
+  "confidential_terms": [
+    "Project Aurora",
+    "NW-Internal-Pricing-2027",
+    "Acq-Target-Beta"
+  ],
+  "rules": [
+    {
+      "rule_id": "TERM-01",
+      "modality": "FORBIDDEN",
+      "category": "terminology",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Terminology §1.1 [TERM-01]",
+      "description": "Write 'learners' in external copy. Do not use 'students'.",
+      "patterns": {
+        "forbidden_terms": ["students", "student"],
+        "preferred_map": {"students": "learners", "student": "learner"}
+      },
+      "examples": {
+        "positive": ["Our learners complete projects at their own pace."],
+        "negative": ["Students told us they want flexible courses."]
+      }
+    },
+    {
+      "rule_id": "TERM-02",
+      "modality": "FORBIDDEN",
+      "category": "terminology",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Terminology §1.2 [TERM-02]",
+      "description": "Do not use 'cheap'. Use 'affordable'.",
+      "patterns": {
+        "forbidden_terms": ["cheap", "cheapest"],
+        "preferred_map": {"cheap": "affordable", "cheapest": "most affordable"}
+      },
+      "examples": {
+        "positive": ["Affordable monthly plans start at £15."],
+        "negative": ["We offer cheap online courses."]
+      }
+    },
+    {
+      "rule_id": "TERM-03",
+      "modality": "MUST",
+      "category": "terminology",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Terminology §1.3 [TERM-03]",
+      "description": "The product name is 'Northwind Academy' (or 'Northwind' on second mention). 'NW Academy' is not permitted.",
+      "patterns": {
+        "forbidden_terms": ["NW Academy", "N.W. Academy", "NorthWind academy"],
+        "preferred_map": {"NW Academy": "Northwind Academy", "N.W. Academy": "Northwind Academy"}
+      },
+      "examples": {
+        "positive": ["Northwind Academy certificates are available for every course."],
+        "negative": ["NW Academy certificates are available for every course."]
+      }
+    },
+    {
+      "rule_id": "TONE-01",
+      "modality": "FORBIDDEN",
+      "category": "tone",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Brand Voice & Tone §2.1 [TONE-01]",
+      "description": "No hype words: 'revolutionary', 'best-ever', 'game-changing'.",
+      "patterns": {
+        "forbidden_terms": ["revolutionary", "best-ever", "game-changing", "world-beating", "miracle"],
+        "preferred_map": {
+          "revolutionary": "practical",
+          "best-ever": "structured",
+          "game-changing": "hands-on"
+        }
+      },
+      "examples": {
+        "positive": ["Learn faster with our structured course."],
+        "negative": ["Our revolutionary new platform is our best-ever course!"]
+      }
+    },
+    {
+      "rule_id": "TONE-02",
+      "modality": "FORBIDDEN",
+      "category": "tone",
+      "check_type": "semantic",
+      "severity": "Violation",
+      "high_risk": true,
+      "source_clause": "Brand Voice & Tone §2.2 [TONE-02]",
+      "description": "Do not use fear or job-loss pressure to sell courses.",
+      "patterns": {
+        "semantic_anchors": [
+          "replaced by AI",
+          "lose your job",
+          "don't get left behind",
+          "obsolete within a year",
+          "career will fail without"
+        ],
+        "preferred_rewrite": "Build practical AI and data skills to advance your career with confidence."
+      },
+      "examples": {
+        "positive": ["Build practical data skills to grow in your role."],
+        "negative": ["Without these skills, you will be replaced by AI within a year. Don't get left behind!"]
+      }
+    },
+    {
+      "rule_id": "TONE-03",
+      "modality": "FORBIDDEN",
+      "category": "tone",
+      "check_type": "semantic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Brand Voice & Tone §2.3 [TONE-03]",
+      "description": "Do not shame learners for their choices or circumstances.",
+      "patterns": {
+        "semantic_anchors": [
+          "wasting their money",
+          "wasting your money",
+          "skip the basics are",
+          "lazy learners",
+          "foolish to ignore",
+          "only amateurs"
+        ],
+        "preferred_rewrite": "Starting with the fundamentals helps learners get the most value from every course."
+      },
+      "examples": {
+        "positive": ["Starting with the fundamentals helps every learner build a strong foundation."],
+        "negative": ["Learners who skip the basics are, frankly, wasting their money."]
+      }
+    },
+    {
+      "rule_id": "CLAIM-01",
+      "modality": "MUST",
+      "category": "claim",
+      "check_type": "semantic",
+      "severity": "Advisory",
+      "high_risk": true,
+      "source_clause": "Messaging Guideline 4.2 [CLAIM-01]",
+      "description": "Quantified claims about results, time savings or performance need a matching approved fact in the Fact Ledger.",
+      "patterns": {
+        "quantified_claim_regex": "\\b(\\d+(?:\\.\\d+)?%|\\d+\\s+in\\s+\\d+|cut[s]?\\s+[\\w\\s]+by\\s+\\d+%|\\d+x\\s+faster)\\b"
+      },
+      "examples": {
+        "positive": ["Our platform helps teams get started faster."],
+        "negative": ["Learners cut their study time by 50%."]
+      }
+    },
+    {
+      "rule_id": "CLAIM-02",
+      "modality": "MUST",
+      "category": "claim",
+      "check_type": "semantic",
+      "severity": "Violation",
+      "high_risk": true,
+      "source_clause": "Messaging Guideline 4.3 [CLAIM-02]",
+      "description": "Outcome statistics (jobs, promotions, salary) must match the current approved fact. Contradicting an approved fact is a violation.",
+      "patterns": {
+        "outcome_keywords": ["graduates", "completers", "new role", "promotion", "land a job", "within six months"]
+      },
+      "examples": {
+        "positive": ["71% of 2025 completers reported a new role or promotion within six months."],
+        "negative": ["9 in 10 of our graduates land a new role within six months."]
+      }
+    },
+    {
+      "rule_id": "CLAIM-03",
+      "modality": "FORBIDDEN",
+      "category": "claim",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": true,
+      "source_clause": "Messaging Guideline 4.4 [CLAIM-03]",
+      "description": "Do not promise or guarantee outcomes, jobs or results.",
+      "patterns": {
+        "forbidden_terms": [
+          "guarantees you a better job",
+          "guarantees you a job",
+          "guaranteed job",
+          "guarantee a promotion",
+          "100% guaranteed outcome",
+          "guarantees you"
+        ],
+        "preferred_map": {
+          "guarantees you a better job": "prepares you for career growth",
+          "guarantees you a job": "prepares you for a new role",
+          "guaranteed job": "structured career preparation",
+          "guarantee a promotion": "support your career advancement",
+          "100% guaranteed outcome": "practical skill outcome",
+          "guarantees you": "supports you toward"
+        }
+      },
+      "examples": {
+        "positive": ["Our platform prepares you for new career opportunities."],
+        "negative": ["Our platform guarantees you a better job."]
+      }
+    },
+    {
+      "rule_id": "FACT-01",
+      "modality": "MUST",
+      "category": "claim",
+      "check_type": "semantic",
+      "severity": "Violation",
+      "high_risk": true,
+      "source_clause": "Fact Governance §4.5 [FACT-01]",
+      "description": "Durations, prices and counts must match a current approved fact. Expired facts are stale and must not be used.",
+      "patterns": {
+        "fact_categories": ["duration", "pricing", "counts", "scholarship"]
+      },
+      "examples": {
+        "positive": ["Data Foundations takes 10 weeks."],
+        "negative": ["Data Foundations takes just 12 weeks."]
+      }
+    },
+    {
+      "rule_id": "ACC-01",
+      "modality": "MUST",
+      "category": "accessibility",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Accessibility Standard §5.1 [ACC-01]",
+      "description": "Every image has alt text that describes its content. Content given as 'Alt text: none' breaches this rule.",
+      "patterns": {
+        "regex_violation": "Alt\\s*text:\\s*(none|missing|empty|null|\\s*\\])"
+      },
+      "examples": {
+        "positive": ["[Image: smiling learner at laptop | Alt text: Learner completing a data exercise on a laptop]"],
+        "negative": ["[Image: smiling learner at laptop | Alt text: none]"]
+      }
+    },
+    {
+      "rule_id": "ACC-02",
+      "modality": "MUST",
+      "category": "accessibility",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Accessibility Standard §5.2 [ACC-02]",
+      "description": "Text has a contrast ratio of at least 4.5:1 against its background. A value below 4.5:1 breaches this rule.",
+      "patterns": {
+        "min_contrast_ratio": 4.5
+      },
+      "examples": {
+        "positive": ["[Banner text: navy on white | Contrast: 12.6:1]"],
+        "negative": ["[Banner text: light grey on white | Contrast: 2.1:1]"]
+      }
+    },
+    {
+      "rule_id": "ACC-03",
+      "modality": "FORBIDDEN",
+      "category": "accessibility",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Accessibility Standard §5.3 [ACC-03]",
+      "description": "Link text describes the destination. Do not use 'click here'.",
+      "patterns": {
+        "forbidden_terms": ["click here", "tap here", "link here"],
+        "preferred_map": {"Click here to enrol": "Explore the enrolment page", "click here": "view course details"}
+      },
+      "examples": {
+        "positive": ["Explore Data Foundations to enrol."],
+        "negative": ["Ready to start? Click here to enrol."]
+      }
+    },
+    {
+      "rule_id": "ACC-04",
+      "modality": "MUST",
+      "category": "accessibility",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Accessibility Standard §5.4 [ACC-04]",
+      "description": "Video has captions. Content given as 'Captions: none' breaches this rule.",
+      "patterns": {
+        "regex_violation": "Captions:\\s*(none|missing|off|false)"
+      },
+      "examples": {
+        "positive": ["[Video: course preview, 2 min | Captions: English CC enabled]"],
+        "negative": ["[Video: course preview, 2 min | Captions: none]"]
+      }
+    },
+    {
+      "rule_id": "FMT-01",
+      "modality": "MUST",
+      "category": "formatting",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Editorial Format §6.1 [FMT-01]",
+      "description": "Dates are written day month year, for example 30 November 2026.",
+      "patterns": {
+        "regex_violation": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b"
+      },
+      "examples": {
+        "positive": ["Enrolment closes 30 November 2026."],
+        "negative": ["Enrolment closes 11/30/26."]
+      }
+    },
+    {
+      "rule_id": "LEGAL-01",
+      "modality": "FORBIDDEN",
+      "category": "legal",
+      "check_type": "semantic",
+      "severity": "Violation",
+      "high_risk": true,
+      "source_clause": "Legal & Compliance §7.1 [LEGAL-01]",
+      "description": "No medical or health claims. Courses do not treat, cure or prevent any condition.",
+      "patterns": {
+        "semantic_anchors": ["cures anxiety", "treats depression", "heals insomnia", "medical treatment", "clinical cure", "treats mental illness", "prevents burnout clinically"],
+        "preferred_rewrite": "supports calm focus habits"
+      },
+      "examples": {
+        "positive": ["Our workshop introduces practical time and focus habits."],
+        "negative": ["Our mindfulness course cures anxiety in four weeks."]
+      }
+    },
+    {
+      "rule_id": "VIS-01",
+      "modality": "MUST",
+      "category": "visual",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Visual Identity §8.1 [VIS-01]",
+      "description": "Brand graphics must use approved Northwind palette colours within perceptual distance CIEDE2000 (ΔE00 <= 2.5).",
+      "patterns": {
+        "max_delta_e00": 2.5
+      },
+      "examples": {
+        "positive": ["Primary background #0F2B48 (ΔE00 = 0.0)"],
+        "negative": ["Off-palette neon orange #FF4500 (ΔE00 = 42.8)"]
+      }
+    },
+    {
+      "rule_id": "VIS-02",
+      "modality": "MUST",
+      "category": "visual",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Visual Identity §8.2 [VIS-02]",
+      "description": "The Northwind Academy wordmark must preserve its 4.0:1 aspect ratio (+/- 5%) without stretching.",
+      "patterns": {
+        "aspect_ratio": 4.0,
+        "tolerance": 0.05
+      },
+      "examples": {
+        "positive": ["Logo rendered at 400x100 px (ratio 4.0:1)"],
+        "negative": ["Logo distorted at 220x100 px (ratio 2.2:1)"]
+      }
+    }
+  ],
+  "seeded_defect_rules_for_linter_test": [
+    {
+      "rule_id": "DEFECT-VAGUE-01",
+      "modality": "MUST",
+      "category": "tone",
+      "check_type": "semantic",
+      "severity": "Advisory",
+      "source_clause": "Draft Appendix D1",
+      "description": "Copy should feel punchy, modern, synergistic, and effortlessly vibrant.",
+      "patterns": {},
+      "examples": {"positive": [], "negative": []},
+      "seeded_defect_type": "UNCHECKABLE_VAGUE_AND_MISSING_EXAMPLES"
+    },
+    {
+      "rule_id": "DEFECT-CONTRADICT-01",
+      "modality": "MUST",
+      "category": "terminology",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "source_clause": "Draft Appendix D2",
+      "description": "Always address university attendees as 'students' in campus flyers.",
+      "patterns": {"required_terms": ["students"]},
+      "examples": {"positive": ["Students get campus access."], "negative": []},
+      "seeded_defect_type": "CONTRADICTS_TERM_01"
+    },
+    {
+      "rule_id": "DEFECT-OVERLAP-01",
+      "modality": "FORBIDDEN",
+      "category": "terminology",
+      "check_type": "deterministic",
+      "severity": "Advisory",
+      "source_clause": "Draft Appendix D3",
+      "description": "Avoid using the word 'cheap' in promotional banners.",
+      "patterns": {"forbidden_terms": ["cheap"]},
+      "examples": {"positive": ["Affordable plans"], "negative": ["Cheap plans"]},
+      "seeded_defect_type": "OVERLAPS_TERM_02"
+    }
+  ]
+}

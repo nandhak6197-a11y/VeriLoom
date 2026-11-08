@@ -1,0 +1,15 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "TERM-02",
+      "quote": "cheap",
+      "explanation": "Use affordable"
+    },
+    {
+      "rule_id": "TERM-01",
+      "quote": "Students",
+      "explanation": "Use learners"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "F-OUT-2025",
+      "quote": "9 in 10",
+      "explanation": "Mismatch with F-OUT-2025"
+    }
+  ]
+}

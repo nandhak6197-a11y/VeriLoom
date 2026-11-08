@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "LEGAL-01",
+      "quote": "cures anxiety in four weeks",
+      "explanation": "Medical claim prohibited"
+    }
+  ]
+}

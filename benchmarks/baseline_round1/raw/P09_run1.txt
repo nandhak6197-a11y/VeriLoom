@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "FMT-01",
+      "quote": "11/30/26",
+      "explanation": "Date format must be day month year"
+    }
+  ]
+}

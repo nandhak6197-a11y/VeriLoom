@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "TONE-01",
+      "quote": "best-ever",
+      "explanation": "Hype word prohibited"
+    }
+  ]
+}

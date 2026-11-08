@@ -1,0 +1,222 @@
+{
+  "description": "VeriLoom Round 2 Golden Evaluation Set (§3.2 18 Baseline Pieces + §4.4 Worked Example + §4.5 Modality Inflation + §1.3 Incident Test Cases)",
+  "baseline_18_pieces": [
+    {
+      "piece_id": "P01",
+      "expected_flag": false,
+      "required_rules": [],
+      "severity": "none",
+      "check_type": "clean control",
+      "piece_text": "Start learning data skills this month. Data Foundations gives learners weekly live sessions, recordings and a community forum. Join by 30 November 2026. [Link: Explore Data Foundations]",
+      "must_keep_points": ["Data Foundations", "30 November 2026"],
+      "notes": "Clean control. No quantified claims."
+    },
+    {
+      "piece_id": "P02",
+      "expected_flag": true,
+      "required_rules": ["TONE-01", "CLAIM-03"],
+      "severity": "High",
+      "check_type": "semantic + deterministic",
+      "piece_text": "Our revolutionary new platform guarantees you a better job. Join Northwind Academy today!",
+      "must_keep_points": ["Northwind Academy"],
+      "notes": "Hype word and outcome guarantee."
+    },
+    {
+      "piece_id": "P03",
+      "expected_flag": true,
+      "required_rules": ["TERM-01", "TERM-02"],
+      "severity": "Low",
+      "check_type": "deterministic",
+      "piece_text": "Students told us they want cheap, flexible courses. So we built them.",
+      "must_keep_points": ["flexible courses"],
+      "notes": "Banned term and non-preferred term."
+    },
+    {
+      "piece_id": "P04",
+      "expected_flag": true,
+      "required_rules": ["CLAIM-01"],
+      "severity": "High",
+      "check_type": "semantic (no approved fact)",
+      "piece_text": "Learners cut their study time by 50%. Start your free trial today.",
+      "must_keep_points": ["free trial"],
+      "notes": "Quantified claim with no approved fact."
+    },
+    {
+      "piece_id": "P05",
+      "expected_flag": true,
+      "required_rules": ["CLAIM-02"],
+      "severity": "High",
+      "check_type": "fact contradiction",
+      "piece_text": "9 in 10 of our graduates land a new role within six months.",
+      "must_keep_points": ["within six months"],
+      "notes": "Contradicts F-OUT-2025 (71%)."
+    },
+    {
+      "piece_id": "P06",
+      "expected_flag": true,
+      "required_rules": ["LEGAL-01"],
+      "severity": "High",
+      "check_type": "semantic",
+      "piece_text": "Our mindfulness course cures anxiety in four weeks.",
+      "must_keep_points": ["mindfulness"],
+      "notes": "Health claim."
+    },
+    {
+      "piece_id": "P07",
+      "expected_flag": true,
+      "required_rules": ["ACC-01"],
+      "severity": "Medium",
+      "check_type": "deterministic",
+      "piece_text": "Learn at your own pace on any device. [Image: smiling learner at laptop | Alt text: none]",
+      "must_keep_points": ["at your own pace"],
+      "notes": "Image without alt text."
+    },
+    {
+      "piece_id": "P08",
+      "expected_flag": true,
+      "required_rules": ["ACC-03"],
+      "severity": "Medium",
+      "check_type": "deterministic",
+      "piece_text": "Ready to start? Click here to enrol.",
+      "must_keep_points": ["Ready to start?"],
+      "notes": "Non-descriptive link text."
+    },
+    {
+      "piece_id": "P09",
+      "expected_flag": true,
+      "required_rules": ["FMT-01"],
+      "severity": "Low",
+      "check_type": "deterministic",
+      "piece_text": "Enrolment closes 11/30/26.",
+      "must_keep_points": ["Enrolment closes"],
+      "notes": "Date format."
+    },
+    {
+      "piece_id": "P10",
+      "expected_flag": true,
+      "required_rules": ["TONE-02"],
+      "severity": "High",
+      "check_type": "semantic",
+      "piece_text": "Without these skills, you will be replaced by AI within a year. Don't get left behind!",
+      "must_keep_points": ["skills"],
+      "notes": "Fear or job-loss pressure."
+    },
+    {
+      "piece_id": "P11",
+      "expected_flag": false,
+      "required_rules": [],
+      "severity": "none",
+      "check_type": "clean control",
+      "piece_text": "Our tutors answer questions in the forum. Post yours and see how other learners solved similar problems.",
+      "must_keep_points": ["tutors", "forum"],
+      "notes": "Clean control."
+    },
+    {
+      "piece_id": "P12",
+      "expected_flag": true,
+      "required_rules": ["ACC-04"],
+      "severity": "Medium",
+      "check_type": "deterministic",
+      "piece_text": "Watch our two-minute course preview. [Video: course preview, 2 min | Captions: none]",
+      "must_keep_points": ["two-minute course preview"],
+      "notes": "Video without captions."
+    },
+    {
+      "piece_id": "P13",
+      "expected_flag": true,
+      "required_rules": ["FACT-01"],
+      "severity": "High",
+      "check_type": "fact (expired fact)",
+      "piece_text": "Data Foundations takes just 12 weeks. Enrol today.",
+      "must_keep_points": ["Data Foundations", "Enrol today"],
+      "notes": "Uses expired F-DUR-01; current fact is 10 weeks."
+    },
+    {
+      "piece_id": "P14",
+      "expected_flag": true,
+      "required_rules": ["TONE-03"],
+      "severity": "Medium",
+      "check_type": "semantic",
+      "piece_text": "Learners who skip the basics are, frankly, wasting their money.",
+      "must_keep_points": ["the basics"],
+      "notes": "Shaming tone; no keyword trigger."
+    },
+    {
+      "piece_id": "P15",
+      "expected_flag": false,
+      "required_rules": [],
+      "severity": "none",
+      "check_type": "clean control",
+      "piece_text": "Affordable monthly plans start at £15, and you can cancel from your account settings.",
+      "must_keep_points": ["£15"],
+      "notes": "Clean control. Matches F-PRICE-01."
+    },
+    {
+      "piece_id": "P16",
+      "expected_flag": true,
+      "required_rules": ["TERM-03"],
+      "severity": "Low",
+      "check_type": "deterministic",
+      "piece_text": "NW Academy certificates are available for every course.",
+      "must_keep_points": ["certificates are available"],
+      "notes": "Non-permitted product name."
+    },
+    {
+      "piece_id": "P17",
+      "expected_flag": false,
+      "required_rules": [],
+      "severity": "none",
+      "check_type": "clean control",
+      "piece_text": "Northwind Academy has taught over 40,000 learners since 2019.",
+      "must_keep_points": ["Northwind Academy", "40,000 learners"],
+      "notes": "Clean control. Matches F-LEARN-01."
+    },
+    {
+      "piece_id": "P18",
+      "expected_flag": true,
+      "required_rules": ["ACC-02", "TONE-01"],
+      "severity": "Medium",
+      "check_type": "deterministic + semantic",
+      "piece_text": "[Banner text: light grey on white | Contrast: 2.1:1] Learn faster with our best-ever course!",
+      "must_keep_points": ["Learn faster"],
+      "notes": "Low contrast and hype word."
+    }
+  ],
+  "special_acceptance_cases": [
+    {
+      "piece_id": "WE-01",
+      "title": "Section 4.4 Worked Example (Webinar Onboarding Promo)",
+      "piece_text": "Our platform cuts onboarding time by 50%. Join the webinar on 12 Nov.",
+      "creator_intent": "Announce the 12 November webinar; convey an onboarding benefit",
+      "must_keep_points": ["12 Nov", "webinar"],
+      "expected_rule": "CLAIM-01",
+      "expected_nearest_fact": "F-014",
+      "expected_verdict_tier": "Advisory",
+      "expected_route": "Authorised Reviewer",
+      "expected_suggested_fix": "Our platform helps teams get started faster. Join the webinar on 12 Nov."
+    },
+    {
+      "piece_id": "MI-01",
+      "title": "Section 4.5.1(d) Modality Inflation Test ('Up to 30%' -> '30%')",
+      "piece_text": "Learners on annual plans always save 30% compared with monthly billing. Join by 30 November 2026.",
+      "creator_intent": "Promote annual plan discount before 30 November 2026",
+      "must_keep_points": ["annual plans", "30 November 2026"],
+      "expected_rule": "FACT-01",
+      "expected_nearest_fact": "F-SAVE-01",
+      "expected_verdict_tier": "Violation",
+      "expected_route": "Authorised Reviewer",
+      "expected_suggested_fix": "Learners on annual plans save up to 30% compared with monthly billing. Join by 30 November 2026."
+    },
+    {
+      "piece_id": "INC-01",
+      "title": "Section 1.3 Incident Test: Unverified Attribution / Quote",
+      "piece_text": "As J. G. Ballard famously wrote in his 1978 book 'The Digital Horizon', data literacy cuts career stagnation by 80%.",
+      "creator_intent": "Inspire learners with a literary quote on data literacy",
+      "must_keep_points": ["data literacy"],
+      "origin": "agency",
+      "expected_rule": "CLAIM-01",
+      "expected_verdict_tier": "Advisory",
+      "expected_route": "Authorised Reviewer"
+    }
+  ]
+}

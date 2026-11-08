@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "CLAIM-01",
+      "quote": "cut their study time by 50%",
+      "explanation": "No approved fact in Fact Ledger"
+    }
+  ]
+}

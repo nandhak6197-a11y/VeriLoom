@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "ACC-01",
+      "quote": "Alt text: none",
+      "explanation": "Alt text none breaches ACC-01"
+    }
+  ]
+}

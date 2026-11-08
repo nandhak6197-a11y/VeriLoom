@@ -1,0 +1,15 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "ACC-02",
+      "quote": "Contrast: 2.1:1",
+      "explanation": "Contrast ratio < 4.5:1"
+    },
+    {
+      "rule_id": "TONE-01",
+      "quote": "best-ever",
+      "explanation": "Hype word"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+piece_id,expected_flag,required_rules,severity,check_type,piece_text,notes
+P01,N,,none,clean control,"Start learning data skills this month. Data Foundations gives learners weekly live sessions, recordings and a community forum. Join by 30 November 2026. [Link: Explore Data Foundations]",Clean control. No quantified claims.
+P02,Y,TONE-01;CLAIM-03,High,semantic + deterministic,"Our revolutionary new platform guarantees you a better job. Join Northwind Academy today!",Hype word and outcome guarantee.
+P03,Y,TERM-01;TERM-02,Low,deterministic,"Students told us they want cheap, flexible courses. So we built them.",Banned term and non-preferred term.
+P04,Y,CLAIM-01,High,semantic (no approved fact),"Learners cut their study time by 50%. Start your free trial today.",Quantified claim with no approved fact.
+P05,Y,CLAIM-02,High,fact contradiction,"9 in 10 of our graduates land a new role within six months.",Contradicts F-OUT-2025 (71%).
+P06,Y,LEGAL-01,High,semantic,"Our mindfulness course cures anxiety in four weeks.",Health claim.
+P07,Y,ACC-01,Medium,deterministic,"Learn at your own pace on any device. [Image: smiling learner at laptop | Alt text: none]",Image without alt text.
+P08,Y,ACC-03,Medium,deterministic,"Ready to start? Click here to enrol.",Non-descriptive link text.
+P09,Y,FMT-01,Low,deterministic,"Enrolment closes 11/30/26.",Date format.
+P10,Y,TONE-02,High,semantic,"Without these skills, you will be replaced by AI within a year. Don't get left behind!",Fear or job-loss pressure.
+P11,N,,none,clean control,"Our tutors answer questions in the forum. Post yours and see how other learners solved similar problems.",Clean control.
+P12,Y,ACC-04,Medium,deterministic,"Watch our two-minute course preview. [Video: course preview, 2 min | Captions: none]",Video without captions.
+P13,Y,FACT-01,High,fact (expired fact),"Data Foundations takes just 12 weeks. Enrol today.",Uses expired F-DUR-01; current fact is 10 weeks.
+P14,Y,TONE-03,Medium,semantic,"Learners who skip the basics are, frankly, wasting their money.",Shaming tone; no keyword trigger.
+P15,N,,none,clean control,"Affordable monthly plans start at £15, and you can cancel from your account settings.",Clean control. Matches F-PRICE-01.
+P16,Y,TERM-03,Low,deterministic,"NW Academy certificates are available for every course.",Non-permitted product name.
+P17,N,,none,clean control,"Northwind Academy has taught over 40,000 learners since 2019.",Clean control. Matches F-LEARN-01.
+P18,Y,ACC-02;TONE-01,Medium,deterministic + semantic,"[Banner text: light grey on white | Contrast: 2.1:1] Learn faster with our best-ever course!",Low contrast and hype word.

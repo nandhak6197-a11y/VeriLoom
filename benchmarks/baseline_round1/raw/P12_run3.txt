@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "ACC-04",
+      "quote": "Captions: none",
+      "explanation": "Captions required"
+    }
+  ]
+}

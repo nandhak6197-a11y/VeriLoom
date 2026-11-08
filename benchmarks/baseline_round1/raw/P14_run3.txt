@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "TONE-03",
+      "quote": "frankly, wasting their money",
+      "explanation": "Shames learners"
+    }
+  ]
+}

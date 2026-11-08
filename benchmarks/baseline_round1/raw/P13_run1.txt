@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "FACT-01",
+      "quote": "12 weeks",
+      "explanation": "Uses expired fact F-DUR-01"
+    }
+  ]
+}

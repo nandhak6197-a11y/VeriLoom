@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "TONE-02",
+      "quote": "replaced by AI within a year",
+      "explanation": "Fear/job-loss pressure prohibited"
+    }
+  ]
+}

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeriLoom — Executable Brand &amp; Fact Verification</title>
+  <link rel="stylesheet" href="/static/css/styles.css?v=23.0" />
+</head>
+<body class="mode-simple">
+  <div class="app-shell">
+    <!-- Top Horizontal Navigation Bar (Single-Line Guaranteed on 1280px–1440px Viewports) -->
+    <header class="top-header" role="banner">
+      <div class="top-header-inner">
+        <div class="brand-header">
+          <h1>VeriLoom</h1>
+        </div>
+
+        <nav class="top-nav" role="tablist" aria-label="Workspace Navigation">
+          <button class="tab-btn" role="tab" id="tab-btn-workbench" aria-selected="true" aria-controls="panel-workbench" onclick="switchTab('workbench')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Review Workbench
+          </button>
+          <button class="tab-btn" role="tab" id="tab-btn-visual" aria-selected="false" aria-controls="panel-visual" onclick="switchTab('visual')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            Banner &amp; Contrast
+          </button>
+          <button class="tab-btn" role="tab" id="tab-btn-guidelines" aria-selected="false" aria-controls="panel-guidelines" onclick="switchTab('guidelines')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            Guideline Lab
+          </button>
+          <button class="tab-btn" role="tab" id="tab-btn-facts" aria-selected="false" aria-controls="panel-facts" onclick="switchTab('facts')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Fact Vault
+          </button>
+          <button class="tab-btn" role="tab" id="tab-btn-insights" aria-selected="false" aria-controls="panel-insights" onclick="switchTab('insights')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            Metrics &amp; ROR
+          </button>
+          <button class="tab-btn" role="tab" id="tab-btn-audit" aria-selected="false" aria-controls="panel-audit" onclick="switchTab('audit')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Audit Ledger
+          </button>
+        </nav>
+
+        <div class="top-controls">
+          <!-- Simple Summary vs Developer/Audit Details Segmented Toggle -->
+          <div class="mode-toggle-group" role="group" aria-label="View Complexity Mode">
+            <button type="button" id="mode-btn-simple" class="mode-toggle-btn active" onclick="setDetailMode('simple')">
+              Simple View
+            </button>
+            <button type="button" id="mode-btn-dev" class="mode-toggle-btn" onclick="setDetailMode('dev')">
+              Audit Details
+            </button>
+          </div>
+
+          <div class="top-control-pill">
+            <label for="active-role-select">Role</label>
+            <select id="active-role-select" aria-label="Select active workflow role" onchange="onRoleChanged()">
+              <option value="Creator">Creator</option>
+              <option value="Brand Manager">Brand Manager</option>
+              <option value="Authorised Reviewer">Legal Reviewer</option>
+              <option value="Brand Admin">Brand Admin</option>
+            </select>
+          </div>
+
+          <!-- Compact Avatar + User Pill (Prevents Right-Edge Overflow on 1366px Screens) -->
+          <div class="top-control-pill user-avatar-pill" title="Active Reviewer Identity (Click to edit)">
+            <span class="avatar-circle" id="user-avatar-initials">NK</span>
+            <input type="text" id="actor-name-input" value="Nandha K" aria-label="Actor display name" oninput="updateAvatarInitials(this.value)" />
+          </div>
+
+          <div class="top-control-pill dev-only-el" id="chain-status-badge" title="SHA-256 Audit Ledger Integrity">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style="font-size: 0.74rem; color: var(--text-secondary);">Chain Verified</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Centered Salt & Pepper Workspace -->
+    <main id="main-content" class="main-workspace" role="main">
+      <!-- Editorial Serif Greeting Header -->
+      <div class="editorial-hero stagger-1">
+        <h2>Guidelines as an Executable Specification</h2>
+        <p class="simple-only-el">Verify marketing copy against approved facts, brand voice, and protected keywords in one click.</p>
+        <p class="dev-only-el">Northwind Academy Specification v1.0.0 &bull; Deterministic AST + Time-Bounded Fact Vault + Local 67M BERT-NLI</p>
+      </div>
+
+      <div id="status-banner" role="status" aria-live="polite" class="panel-card hidden" style="padding: 12px 18px; border-left: 4px solid var(--accent-champagne);"></div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 1: REVIEW WORKBENCH                                                   -->
+      <!-- ========================================================================= -->
+      <section id="panel-workbench" role="tabpanel" aria-labelledby="tab-btn-workbench" class="tab-panel-anim">
+        <div class="quick-guide-bar stagger-2">
+          <div class="guide-step-card">
+            <div class="guide-step-num">1</div>
+            <div class="guide-step-text">
+              <strong>Choose Scenario or Type Copy</strong>
+              <span>Pick a preset on the left or write your draft.</span>
+            </div>
+          </div>
+          <div class="guide-step-card">
+            <div class="guide-step-num">2</div>
+            <div class="guide-step-text">
+              <strong>Click "Verify Draft Now"</strong>
+              <span>Checks rules, Fact Vault &amp; 67M BERT-NLI.</span>
+            </div>
+          </div>
+          <div class="guide-step-card">
+            <div class="guide-step-num">3</div>
+            <div class="guide-step-text">
+              <strong>Accept Fix &amp; Approve</strong>
+              <span>Apply surgical diffs and sign off on the right.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Row: Side-by-Side Step 1 (Draft Composer) & Step 2 (Verification Report) -->
+        <div class="workbench-grid stagger-3">
+          <!-- Left Box: 1. Draft Composer -->
+          <div>
+            <div class="panel-card" style="height: 100%; margin-bottom: 0;">
+              <div class="panel-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Step 1. Draft Composer
+                </h2>
+                <span class="tier-badge tier-advisory">Local Engine</span>
+              </div>
+
+              <div class="form-group">
+                <label for="preset-select">Quick-Load Test Scenario</label>
+                <select id="preset-select" class="form-control" onchange="applySelectedPreset()">
+                  <option value="">-- Choose a ready-made test scenario --</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="sub-content">Draft Copy to Verify</label>
+                <textarea id="sub-content" class="form-control" style="min-height: 135px;" placeholder="Paste or type your marketing copy here...">Our platform cuts onboarding time by 50%. Join the webinar on 12 Nov.</textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="must-keep-chip-input">Protected Words (Must-Keep Intent Lock)</label>
+                <div class="chip-input-container" onclick="document.getElementById('must-keep-chip-input').focus()">
+                  <div id="must-keep-chips-list" class="chips-list"></div>
+                  <input type="text" id="must-keep-chip-input" class="chip-text-input" placeholder="+ Add term &amp; press Enter..." onkeydown="handleMustKeepChipKey(event)" onblur="commitMustKeepChipInput()" />
+                </div>
+                <input type="hidden" id="sub-must-keep" value="12 Nov, webinar" />
+                <span class="field-helper-text">Protected terms that AI surgical rewrites are strictly forbidden from deleting.</span>
+              </div>
+
+              <details class="advanced-options">
+                <summary>More Options (Title, Channel, Provenance)</summary>
+                <div class="form-group">
+                  <label for="sub-title">Submission Title</label>
+                  <input type="text" id="sub-title" class="form-control" value="Section 4.4 Worked Example: 12 Nov Onboarding Webinar Promo" />
+                </div>
+                <div class="form-group">
+                  <label for="sub-intent">Creator Intent</label>
+                  <input type="text" id="sub-intent" class="form-control" value="Announce the 12 November webinar; convey an onboarding benefit" />
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="sub-origin">Origin</label>
+                    <select id="sub-origin" class="form-control">
+                      <option value="ai_generated">AI-Generated</option>
+                      <option value="agency">External Agency</option>
+                      <option value="employee">In-House Team</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="sub-channel">Channel</label>
+                    <select id="sub-channel" class="form-control">
+                      <option value="social">Social Media</option>
+                      <option value="email">Email</option>
+                      <option value="web">Web Page</option>
+                      <option value="ad">Paid Ad</option>
+                      <option value="deck">Presentation Deck</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
+
+              <div class="composer-actions-row">
+                <button type="button" id="btn-verify-draft" class="btn btn-primary" style="flex: 1.3;" onclick="submitContentForVerification()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Verify Draft Now
+                </button>
+                <label id="btn-upload-file" class="btn btn-dropzone" title="Upload .txt, .md, .docx, or .pdf document">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span id="upload-file-label-text">Upload Doc (.txt/.docx)</span>
+                  <input type="file" id="file-upload-input" accept=".txt,.md,.docx,.pdf" style="display: none;" onchange="uploadDocumentFile()" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Box: 2. Verification Report & Sign-Off -->
+          <div>
+            <div class="panel-card" id="active-submission-panel" style="margin-bottom: 0;">
+              <div class="panel-header">
+                <div style="flex: 1; min-width: 240px;">
+                  <div style="font-size: 0.78rem; color: var(--accent-champagne); margin-bottom: 3px;">Step 2. Verification Report &amp; Sign-Off</div>
+                  <h2 id="active-asset-title">Verification Report</h2>
+                  <div id="active-asset-meta" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                  <span id="active-verdict-badge" class="tier-badge tier-advisory">ADVISORY</span>
+                  <span id="active-status-badge" class="tier-badge tier-human">IN REVIEW</span>
+                </div>
+              </div>
+
+              <!-- Side-by-Side Original Draft vs Working Copy -->
+              <div class="diff-comparison-grid" style="margin-bottom: 18px;">
+                <div class="comparison-col">
+                  <div class="comparison-label">Original Submitted Draft</div>
+                  <div id="active-original-text" class="diff-box"></div>
+                </div>
+                <div class="comparison-col">
+                  <div id="working-copy-label" class="comparison-label" style="color: #86efac;">Working Copy (Current Version)</div>
+                  <div id="active-current-text" class="diff-box" style="border-color: rgba(34, 197, 94, 0.35);"></div>
+                </div>
+              </div>
+
+              <!-- Step 2B: Cited Findings & Surgical Tracked-Change Suggestions -->
+              <div class="section-divider-label">
+                <span>Cited Findings &amp; Surgical Tracked-Change Suggestions</span>
+                <span class="dev-only-el" style="font-size: 0.76rem; color: var(--accent-champagne); font-family: var(--font-header);">Audit Mode: Showing AST Clauses, IPM &amp; Stability Gates</span>
+              </div>
+              <div id="active-findings-list"></div>
+
+              <!-- Step 3: Human Reviewer Sign-Off Bar (Placed logically AFTER reviewing findings) -->
+              <div class="signoff-card" id="step3-signoff-card">
+                <div class="signoff-info">
+                  <div style="font-size: 0.78rem; color: var(--accent-champagne); margin-bottom: 2px;">Step 3. Final Governance Decision</div>
+                  <strong style="font-size: 1rem; color: var(--text-primary);">Human Reviewer Sign-Off</strong>
+                  <div id="approval-routing-note" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;"></div>
+                </div>
+                <div class="signoff-actions" id="step3-signoff-actions">
+                  <button type="button" id="btn-decision-APPROVE" class="btn btn-cta-approve" onclick="submitAssetDecision('APPROVE', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Approve Submission
+                  </button>
+                  <button type="button" id="btn-decision-ESCALATE" class="btn btn-ghost btn-sm" onclick="submitAssetDecision('ESCALATE', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Escalate to Legal
+                  </button>
+                  <button type="button" id="btn-decision-REJECT" class="btn btn-ghost-danger btn-sm" onclick="submitAssetDecision('REJECT', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Reject
+                  </button>
+                </div>
+              </div>
+
+              <!-- AI Verification & Privacy Summary -->
+              <div id="active-receipt-box" class="receipt-box"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Full-Width Row: Submissions Queue with Filter Pills & Reset Demo Data -->
+        <div class="panel-card stagger-3" style="margin-top: 24px;">
+          <div class="panel-header">
+            <div>
+              <h3>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Submissions Queue &amp; Verification History
+              </h3>
+              <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 3px;">
+                Filter by workflow state or click "Inspect Report" on any submission to load its full verification report above.
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="resetDemoQueue(this)" title="Deduplicate test runs and restore clean 4-scenario benchmark queue">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Reset Demo Queue
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" onclick="loadSubmissionsQueue(null, this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Refresh Queue
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Filter Pill Bar -->
+          <div id="queue-filter-bar" class="filter-pill-bar"></div>
+          <div id="submissions-queue-list"></div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 2: VISUAL & CONTRAST INSPECTOR                                        -->
+      <!-- ========================================================================= -->
+      <section id="panel-visual" role="tabpanel" aria-labelledby="tab-btn-visual" class="hidden tab-panel-anim">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                Visual Banner &amp; Accessibility Inspector
+              </h2>
+              <span style="font-size: 0.88rem; color: var(--text-muted); display: block; margin-top: 4px;">
+                CIEDE2000 (&Delta;E<sub>00</sub> &le; 2.5) palette distance, WCAG 2.1 contrast under OCR text boxes (&ge; 4.5:1), and logo aspect ratio (4.0:1).
+              </span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <button type="button" class="btn btn-danger btn-sm" onclick="runVisualAuditDemo('non_compliant_demo', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Load Non-Compliant Banner
+              </button>
+              <button type="button" class="btn btn-success btn-sm" onclick="runVisualAuditDemo('compliant_demo', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Load Compliant Banner
+              </button>
+              <label class="btn btn-dropzone btn-sm" style="margin: 0; cursor: pointer;">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="custom-banner-upload-label">Upload Custom Banner (.png/.jpg)</span>
+                <input type="file" id="custom-banner-input" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="uploadCustomBannerImage()" />
+              </label>
+            </div>
+          </div>
+
+          <div class="workbench-grid" style="grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));">
+            <div style="background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px;">
+              <h3 style="margin-top: 0; font-size: 1.04rem; margin-bottom: 12px;" id="visual-banner-title">1. Banner Canvas &amp; OCR Bounding Boxes</h3>
+              <canvas id="visual-inspector-canvas" width="600" height="260" style="width: 100%; max-width: 600px; border: 1px solid var(--border-card); border-radius: 10px; background: #222222; box-shadow: var(--shadow-sm);"></canvas>
+              <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 10px;">
+                Solid green box = WCAG 2.1 AA Pass (&ge; 4.5:1) &bull; Dashed red box = WCAG 2.1 AA Fail (&lt; 4.5:1) &bull; <strong style="color: var(--accent-cream);">Hover any OCR row on the right to highlight its box on the canvas.</strong>
+              </div>
+            </div>
+
+            <div style="background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px;">
+              <h3 style="margin-top: 0; font-size: 1.04rem; margin-bottom: 12px;">2. Measured Colour Distance &amp; Contrast Report</h3>
+              <div id="visual-audit-results"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 3: GUIDELINE LAB, RULE LINTER & POLICY REPLAY                         -->
+      <!-- ========================================================================= -->
+      <section id="panel-guidelines" role="tabpanel" aria-labelledby="tab-btn-guidelines" class="hidden tab-panel-anim">
+        <div class="workbench-grid">
+          <div>
+            <div class="panel-card">
+              <div class="panel-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Guideline Linter
+                </h2>
+                <button type="button" class="btn btn-primary btn-sm" onclick="runGuidelineLinter(true, this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Scan Rules for Defects
+                </button>
+              </div>
+              <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0;">
+                Audits your Brand-AST rules for contradictions, vague buzzwords, missing examples, and overlapping scopes.
+              </p>
+              <div id="linter-results-box"></div>
+            </div>
+
+            <div class="panel-card" id="policy-replay-card">
+              <div class="panel-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Policy Replay Simulator
+                </h2>
+                <span class="tier-badge tier-advisory">18-Piece Golden Corpus</span>
+              </div>
+              <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0;">
+                Preview how changing a rule affects verdicts across the 18 benchmark pieces before publishing.
+              </p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="replay-rule-id">Rule ID</label>
+                  <input type="text" id="replay-rule-id" class="form-control" value="TERM-01" />
+                </div>
+                <div class="form-group">
+                  <label for="replay-terms">Proposed Forbidden Terms</label>
+                  <input type="text" id="replay-terms" class="form-control" value="students, student, tutors" />
+                </div>
+              </div>
+              <button type="button" id="btn-run-policy-replay" class="btn btn-primary btn-sm" onclick="executePolicyReplay(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Run Policy Replay Simulation
+              </button>
+              <div id="policy-replay-results" style="margin-top: 16px;"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel-card">
+              <div class="panel-header">
+                <h2>Active Brand-AST Specification (Northwind v1.0.0)</h2>
+                <span class="dev-only-el tier-badge tier-pass">SHA-256 Compiled AST</span>
+              </div>
+              <div id="compiled-rules-table-box"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 4: TIME-BOUNDED FACT VAULT                                            -->
+      <!-- ========================================================================= -->
+      <section id="panel-facts" role="tabpanel" aria-labelledby="tab-btn-facts" class="hidden tab-panel-anim">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                Time-Bounded Fact Vault
+              </h2>
+              <span style="font-size: 0.88rem; color: var(--text-muted); display: block; margin-top: 4px;">
+                Quantified claims are verified against approved facts within <code>[valid_from, valid_until]</code> and checked for modality inflation.
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span class="tier-badge tier-pass">Review Date: 2026-11-05</span>
+              <button type="button" id="btn-toggle-add-fact" class="btn btn-primary btn-sm" onclick="toggleAddFactDrawer()">
+                + Add Approved Fact
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Brand Admin Add Fact Form -->
+          <div id="add-fact-drawer" class="hidden" style="background: var(--bg-input); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <strong style="color: var(--accent-cream);">Register New Time-Bounded Fact (Brand Admin Governance)</strong>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAddFactDrawer()">Cancel</button>
+            </div>
+            <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+              <div class="form-group">
+                <label for="new-fact-id">Fact ID</label>
+                <input type="text" id="new-fact-id" class="form-control" placeholder="e.g. F-2026-09" value="F-2026-09" />
+              </div>
+              <div class="form-group">
+                <label for="new-fact-subject">Subject</label>
+                <input type="text" id="new-fact-subject" class="form-control" placeholder="e.g. Enterprise Cohort" value="Enterprise Cohort" />
+              </div>
+              <div class="form-group">
+                <label for="new-fact-metric">Approved Metric</label>
+                <input type="text" id="new-fact-metric" class="form-control" placeholder="e.g. 94% completion" value="94% completion rate" />
+              </div>
+              <div class="form-group">
+                <label for="new-fact-modality">Modality</label>
+                <select id="new-fact-modality" class="form-control">
+                  <option value="directional">directional (survey/sample)</option>
+                  <option value="strict">strict (audited curriculum)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="grid-template-columns: 2fr 1fr 1fr auto; align-items: end;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="new-fact-statement">Approved Claim Statement</label>
+                <input type="text" id="new-fact-statement" class="form-control" value="Enterprise Cohort achieved a 94% completion rate in Q3 2026." />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="new-fact-from">Valid From</label>
+                <input type="text" id="new-fact-from" class="form-control" value="2026-07-01" />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="new-fact-until">Valid Until</label>
+                <input type="text" id="new-fact-until" class="form-control" value="2027-06-30" />
+              </div>
+              <button type="button" class="btn btn-primary" onclick="submitNewFact(this)">Save to Fact Vault</button>
+            </div>
+          </div>
+
+          <div id="fact-filter-bar" class="filter-pill-bar"></div>
+          <div id="fact-vault-table-box"></div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 5: INSIGHTS, ROR TELEMETRY & HYPOTHESES SCORECARD                     -->
+      <!-- ========================================================================= -->
+      <section id="panel-insights" role="tabpanel" aria-labelledby="tab-btn-insights" class="hidden tab-panel-anim">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+              Empirical Hypotheses Scorecard (H1–H7)
+            </h2>
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadInsightsAndTelemetry(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh Metrics
+            </button>
+          </div>
+          <div id="hypotheses-table-box"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2>Reviewer Override Rate (ROR) Telemetry</h2>
+              <span style="font-size: 0.88rem; color: var(--text-muted);">
+                Separates unclear rules needing Guideline Lab refinement (&gt; 45% ROR) from accurate rules with high creator pre-flight volume (0% override).
+              </span>
+            </div>
+          </div>
+          <div id="ror-telemetry-table-box"></div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 6: TAMPER-EVIDENT SHA-256 AUDIT LEDGER                                -->
+      <!-- ========================================================================= -->
+      <section id="panel-audit" role="tabpanel" aria-labelledby="tab-btn-audit" class="hidden tab-panel-anim">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Cryptographic SHA-256 Audit Ledger
+              </h2>
+              <span style="font-size: 0.88rem; color: var(--text-muted); display: block; margin-top: 4px;">
+                Append-only ledger chaining every submission, edit, waiver reason, and human sign-off.
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="btn-simulate-tamper" class="btn btn-danger btn-sm" onclick="triggerTamperSimulation(this)" title="Corrupt a block in the ledger to demonstrate live SHA-256 tamper detection">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Simulate Tamper Attack (Demo)
+              </button>
+              <button type="button" id="btn-restore-chain" class="btn btn-success btn-sm hidden" onclick="restoreTamperedChain(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Restore Intact Chain
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="loadAuditLedger(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Verify Hash Chain
+              </button>
+            </div>
+          </div>
+          <div id="audit-chain-summary-box" style="margin-bottom: 16px;"></div>
+          <div id="audit-events-table-box"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/js/app.js?v=23.0"></script>
+</body>
+</html>

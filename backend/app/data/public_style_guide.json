@@ -1,0 +1,87 @@
+{
+  "tenant": "mailchimp_public_sample",
+  "guide_name": "Mailchimp Content Style Guide (Adapted Sample Subset)",
+  "licence": "CC BY-NC 4.0 (https://styleguide.mailchimp.com/) - Credited for non-commercial hackathon evaluation per §5.4",
+  "version": "v1.0.0",
+  "rules": [
+    {
+      "rule_id": "MC-VOICE-01",
+      "modality": "FORBIDDEN",
+      "category": "tone",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Mailchimp Voice & Tone §2 [MC-VOICE-01]",
+      "description": "Avoid hyperbole and empty buzzwords such as 'ninja', 'rockstar', 'synergy', or 'crush it'.",
+      "patterns": {
+        "forbidden_terms": ["marketing ninja", "rockstar", "synergy", "crush it"],
+        "preferred_map": {
+          "marketing ninja": "marketing specialist",
+          "rockstar": "skilled professional",
+          "synergy": "collaboration",
+          "crush it": "succeed"
+        }
+      },
+      "examples": {
+        "positive": ["Build a campaign that helps your small business succeed."],
+        "negative": ["Become a marketing ninja and crush it with synergy!"]
+      }
+    },
+    {
+      "rule_id": "MC-ACC-01",
+      "modality": "FORBIDDEN",
+      "category": "accessibility",
+      "check_type": "deterministic",
+      "severity": "Violation",
+      "high_risk": false,
+      "source_clause": "Mailchimp Writing for Accessibility §4 [MC-ACC-01]",
+      "description": "Do not use directional or device-specific link language such as 'click here' or 'see above'.",
+      "patterns": {
+        "forbidden_terms": ["click here", "see above", "see below"],
+        "preferred_map": {"click here": "read the guide"}
+      },
+      "examples": {
+        "positive": ["Read the automation guide to configure triggers."],
+        "negative": ["Click here to configure triggers."]
+      }
+    },
+    {
+      "rule_id": "MC-GRAM-01",
+      "modality": "FORBIDDEN",
+      "category": "terminology",
+      "check_type": "deterministic",
+      "severity": "Advisory",
+      "high_risk": false,
+      "source_clause": "Mailchimp Word List §7 [MC-GRAM-01]",
+      "description": "Write 'email' without a hyphen (never 'e-mail') and 'website' as one word (never 'web site').",
+      "patterns": {
+        "forbidden_terms": ["e-mail", "E-mail", "web site"],
+        "preferred_map": {"e-mail": "email", "E-mail": "Email", "web site": "website"}
+      },
+      "examples": {
+        "positive": ["Send your first email campaign from your website."],
+        "negative": ["Send your first e-mail campaign from your web site."]
+      }
+    }
+  ],
+  "test_pieces": [
+    {
+      "piece_id": "MC-P01",
+      "expected_flag": true,
+      "required_rules": ["MC-VOICE-01"],
+      "piece_text": "Become a marketing ninja and crush it with your next campaign!"
+    },
+    {
+      "piece_id": "MC-P02",
+      "expected_flag": true,
+      "required_rules": ["MC-GRAM-01", "MC-ACC-01"],
+      "piece_text": "Send an e-mail to your subscribers. Click here to start."
+    },
+    {
+      "piece_id": "MC-P03",
+      "expected_flag": false,
+      "required_rules": [],
+      "piece_text": "Schedule your email newsletter and review audience insights from your dashboard."
+    }
+  ]
+}

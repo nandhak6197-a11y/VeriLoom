@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "CLAIM-03",
+      "quote": "guarantees you a better job",
+      "explanation": "Job guarantees prohibited"
+    }
+  ]
+}

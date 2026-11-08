@@ -1,0 +1,55 @@
+piece_id,run_no,verdict,flagged_rules,uncited_findings,invented_rules,raw_file,notes
+P01,1,PASS,NONE,0,0,raw/P01_run1.txt,Clean control PASS
+P01,2,PASS,NONE,0,0,raw/P01_run2.txt,Clean control PASS
+P01,3,PASS,NONE,0,0,raw/P01_run3.txt,Clean control PASS
+P02,1,FLAG,TONE-01;CLAIM-03,0,0,raw/P02_run1.txt,
+P02,2,FLAG,CLAIM-03;TONE-01,0,0,raw/P02_run2.txt,
+P02,3,FLAG,CLAIM-03,0,0,raw/P02_run3.txt,Missed TONE-01
+P03,1,FLAG,TERM-01;TERM-02,0,0,raw/P03_run1.txt,
+P03,2,FLAG,TERM-01;TERM-02,0,0,raw/P03_run2.txt,
+P03,3,FLAG,TERM-02;TERM-01,0,0,raw/P03_run3.txt,
+P04,1,FLAG,CLAIM-01,0,0,raw/P04_run1.txt,
+P04,2,FLAG,CLAIM-01,0,0,raw/P04_run2.txt,
+P04,3,FLAG,CLAIM-01,0,0,raw/P04_run3.txt,
+P05,1,FLAG,CLAIM-02,0,0,raw/P05_run1.txt,
+P05,2,FLAG,F-OUT-2025,0,1,raw/P05_run2.txt,Cited fact ID as rule ID
+P05,3,FLAG,CLAIM-02,0,0,raw/P05_run3.txt,
+P06,1,FLAG,LEGAL-01,0,0,raw/P06_run1.txt,
+P06,2,FLAG,LEGAL-01,0,0,raw/P06_run2.txt,
+P06,3,FLAG,LEGAL-01,0,0,raw/P06_run3.txt,
+P07,1,FLAG,ACC-01,0,0,raw/P07_run1.txt,
+P07,2,FLAG,ACC-01,0,0,raw/P07_run2.txt,
+P07,3,PASS,NONE,0,0,raw/P07_run3.txt,Verdict flip: treated bracketed text as non-copy metadata
+P08,1,FLAG,ACC-03,0,0,raw/P08_run1.txt,
+P08,2,FLAG,ACC-03,0,0,raw/P08_run2.txt,
+P08,3,FLAG,ACC-03,0,0,raw/P08_run3.txt,
+P09,1,FLAG,FMT-01,0,0,raw/P09_run1.txt,
+P09,2,FLAG,FMT-01,0,0,raw/P09_run2.txt,
+P09,3,PASS,NONE,0,0,raw/P09_run3.txt,Verdict flip: overlooked date format constraint
+P10,1,FLAG,TONE-02,0,0,raw/P10_run1.txt,
+P10,2,FLAG,TONE-02,0,0,raw/P10_run2.txt,
+P10,3,FLAG,TONE-02,0,0,raw/P10_run3.txt,
+P11,1,PASS,NONE,0,0,raw/P11_run1.txt,Clean control PASS
+P11,2,PASS,NONE,0,0,raw/P11_run2.txt,Clean control PASS
+P11,3,PASS,NONE,0,0,raw/P11_run3.txt,Clean control PASS
+P12,1,FLAG,ACC-04,0,0,raw/P12_run1.txt,
+P12,2,FLAG,ACC-04,0,0,raw/P12_run2.txt,
+P12,3,FLAG,ACC-04,0,0,raw/P12_run3.txt,
+P13,1,FLAG,FACT-01,0,0,raw/P13_run1.txt,
+P13,2,PASS,NONE,0,0,raw/P13_run2.txt,"Verdict flip: saw 12 weeks in fact sheet, missed expiration date"
+P13,3,FLAG,FACT-01,0,0,raw/P13_run3.txt,
+P14,1,FLAG,TONE-03,0,0,raw/P14_run1.txt,
+P14,2,PASS,NONE,0,0,raw/P14_run2.txt,Verdict flip: treated shaming tone as acceptable coaching emphasis
+P14,3,FLAG,TONE-03,0,0,raw/P14_run3.txt,
+P15,1,PASS,NONE,0,0,raw/P15_run1.txt,Clean control PASS
+P15,2,PASS,NONE,0,0,raw/P15_run2.txt,Clean control PASS
+P15,3,PASS,NONE,0,0,raw/P15_run3.txt,Clean control PASS
+P16,1,FLAG,TERM-03,0,0,raw/P16_run1.txt,
+P16,2,FLAG,TERM-03,0,0,raw/P16_run2.txt,
+P16,3,FLAG,TERM-03,0,0,raw/P16_run3.txt,
+P17,1,PASS,NONE,0,0,raw/P17_run1.txt,Clean control PASS
+P17,2,PASS,NONE,0,0,raw/P17_run2.txt,Clean control PASS
+P17,3,PASS,NONE,0,0,raw/P17_run3.txt,Clean control PASS
+P18,1,FLAG,ACC-02;TONE-01,0,0,raw/P18_run1.txt,
+P18,2,FLAG,TONE-01,0,0,raw/P18_run2.txt,Missed ACC-02 in run 2
+P18,3,FLAG,ACC-02;TONE-01,0,0,raw/P18_run3.txt,

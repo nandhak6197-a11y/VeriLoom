@@ -1,0 +1,96 @@
+{
+  "tenant": "northwind_academy",
+  "facts": [
+    {
+      "fact_id": "F-OUT-2025",
+      "category": "outcomes",
+      "subject": "2025 completers",
+      "predicate": "reported a new role or promotion within six months",
+      "metric": "71%",
+      "modality": "Absolute",
+      "statement": "71% of 2025 completers reported a new role or promotion within six months (Outcomes Report 2025).",
+      "owner": "Career Outcomes Team",
+      "source": "Northwind Outcomes Report 2025, p. 14",
+      "valid_from": "2025-09-01",
+      "valid_until": "2026-12-31"
+    },
+    {
+      "fact_id": "F-DUR-01",
+      "category": "duration",
+      "subject": "Data Foundations",
+      "predicate": "course duration",
+      "metric": "12 weeks",
+      "modality": "Absolute",
+      "statement": "Data Foundations is 12 weeks. EXPIRED 30 June 2026. Do not use.",
+      "owner": "Curriculum Director",
+      "source": "2025 Course Catalogue (Superseded)",
+      "valid_from": "2025-01-01",
+      "valid_until": "2026-06-30"
+    },
+    {
+      "fact_id": "F-DUR-02",
+      "category": "duration",
+      "subject": "Data Foundations",
+      "predicate": "course duration",
+      "metric": "10 weeks",
+      "modality": "Absolute",
+      "statement": "Data Foundations is 10 weeks. Effective 1 July 2026.",
+      "owner": "Curriculum Director",
+      "source": "2026-27 Academic Syllabus v2.1",
+      "valid_from": "2026-07-01",
+      "valid_until": "2027-06-30"
+    },
+    {
+      "fact_id": "F-PRICE-01",
+      "category": "pricing",
+      "subject": "Monthly plans",
+      "predicate": "starting price",
+      "metric": "£15",
+      "modality": "Absolute",
+      "statement": "Monthly plans start at £15.",
+      "owner": "Finance & Pricing Ops",
+      "source": "Pricing Schedule FY2026-27",
+      "valid_from": "2026-01-01",
+      "valid_until": "2027-03-31"
+    },
+    {
+      "fact_id": "F-LEARN-01",
+      "category": "counts",
+      "subject": "Northwind Academy",
+      "predicate": "total learners taught since 2019",
+      "metric": "Over 40,000",
+      "modality": "Absolute",
+      "statement": "Over 40,000 learners since 2019.",
+      "owner": "Academic Registrar",
+      "source": "Verified Enrolment Ledger Q3 2026",
+      "valid_from": "2026-01-01",
+      "valid_until": "2027-12-31"
+    },
+    {
+      "fact_id": "F-014",
+      "category": "onboarding",
+      "subject": "Team onboarding time",
+      "predicate": "onboarding setup duration",
+      "metric": "under two weeks",
+      "modality": "Hedged",
+      "statement": "Enterprise team onboarding takes under two weeks (2025 Cohort Survey). EXPIRED 30 June 2026.",
+      "owner": "Enterprise Success Lead",
+      "source": "2025 Enterprise Onboarding Study (Expired)",
+      "valid_from": "2025-01-01",
+      "valid_until": "2026-06-30"
+    },
+    {
+      "fact_id": "F-SAVE-01",
+      "category": "scholarship",
+      "subject": "Annual plan learners",
+      "predicate": "tuition fee reduction",
+      "metric": "up to 30%",
+      "modality": "Hedged",
+      "statement": "Learners on annual plans save up to 30% compared with monthly billing.",
+      "owner": "Finance & Pricing Ops",
+      "source": "2026 Annual Billing Terms §3",
+      "valid_from": "2026-01-01",
+      "valid_until": "2027-06-30"
+    }
+  ]
+}

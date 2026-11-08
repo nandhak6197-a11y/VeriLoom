@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "CLAIM-02",
+      "quote": "9 in 10 of our graduates",
+      "explanation": "Contradicts F-OUT-2025"
+    }
+  ]
+}

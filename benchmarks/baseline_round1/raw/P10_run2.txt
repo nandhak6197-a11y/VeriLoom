@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "TONE-02",
+      "quote": "Without these skills, you will be replaced by AI",
+      "explanation": "Job loss pressure prohibited"
+    }
+  ]
+}

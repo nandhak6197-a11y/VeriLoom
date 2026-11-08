@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "TERM-03",
+      "quote": "NW Academy",
+      "explanation": "NW Academy prohibited"
+    }
+  ]
+}

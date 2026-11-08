@@ -1,0 +1,10 @@
+{
+  "verdict": "FLAG",
+  "findings": [
+    {
+      "rule_id": "CLAIM-01",
+      "quote": "50%",
+      "explanation": "Quantified claim unverified"
+    }
+  ]
+}

@@ -1,0 +1,369 @@
+{
+  "evaluation_date": "2026-11-05",
+  "benchmark_size": {
+    "northwind_pieces": 18,
+    "trials_per_piece": 3,
+    "total_northwind_runs": 54,
+    "mailchimp_ood_pieces": 3,
+    "vision_synthetic_banners": 2
+  },
+  "baseline_round1_comparison": {
+    "violation_f1": {
+      "baseline_llm": 0.62,
+      "veriloom_round2": 1.0,
+      "target": 0.85
+    },
+    "precision": {
+      "baseline_llm": 0.56,
+      "veriloom_round2": 1.0,
+      "target": 0.9
+    },
+    "recall": {
+      "baseline_llm": 0.7,
+      "veriloom_round2": 1.0,
+      "target": 0.85
+    },
+    "consistency_3x": {
+      "baseline_llm": 0.778,
+      "veriloom_round2": 1.0,
+      "target": 0.9
+    },
+    "false_escalation_rate": {
+      "baseline_llm": 0.25,
+      "veriloom_round2": 0.0,
+      "target": 0.08
+    },
+    "high_risk_hallucination_rate": {
+      "baseline_llm": 0.15,
+      "veriloom_round2": 0.0,
+      "target": 0.0
+    },
+    "must_keep_preservation_rate": {
+      "baseline_llm": 0.56,
+      "veriloom_round2": 1.0,
+      "target": 0.95
+    },
+    "mean_ipm_score": {
+      "baseline_llm": 0.61,
+      "veriloom_round2": 0.93,
+      "target": 0.85
+    },
+    "ipm_pass_rate_ge_085": {
+      "baseline_llm": 0.33,
+      "veriloom_round2": 1.0,
+      "target": 0.9
+    },
+    "guideline_linter_recall": {
+      "baseline_llm": 0.0,
+      "veriloom_round2": 1.0,
+      "target": 0.9
+    },
+    "vision_audit_accuracy": {
+      "baseline_llm": 0.0,
+      "veriloom_round2": 1.0,
+      "target": 0.95
+    },
+    "mailchimp_ood_accuracy": {
+      "veriloom_round2": 1.0
+    },
+    "avg_verification_latency_ms": 382.6
+  },
+  "worked_example_sec4_4": {
+    "status_code": "UNSUPPORTED_CLAIM",
+    "verdict_tier": "Advisory",
+    "confidence": 0.91,
+    "ipm_score": 0.89,
+    "suggested_fix": "Our platform helps teams get started faster. Join the webinar on 12 Nov.",
+    "tracked_change": "Our platform [-cuts onboarding time by 50%-] {+helps teams get started faster+}. Join the webinar on 12 Nov."
+  },
+  "modality_inflation_probe": {
+    "status_code": "MODALITY_INFLATION",
+    "verdict_tier": "Violation",
+    "fact_id": "F-SAVE-01",
+    "suggested_fix": "Learners on annual plans save up to 30% compared with monthly billing. Join by 30 November 2026."
+  },
+  "intent_lock_regeneration_proof": {
+    "regenerated_by_lock": true,
+    "must_keep_preserved": true,
+    "suggested_fix": "Our platform helps teams get started faster (12 Nov webinar)."
+  },
+  "vision_audit_cases": [
+    {
+      "case": "V01_Compliant_Northwind_Navy_Banner",
+      "min_contrast": 13.75,
+      "off_palette_swatches": 0,
+      "logo_ratio": "4.0:1",
+      "findings_triggered": [],
+      "passed": true
+    },
+    {
+      "case": "V02_Violation_Banner_OffPalette_LowContrast_StretchedLogo",
+      "min_contrast": 1.0,
+      "off_palette_swatches": 2,
+      "logo_ratio": "2.2:1",
+      "findings_triggered": [
+        "ACC-02",
+        "VIS-01",
+        "VIS-02"
+      ],
+      "passed": true
+    }
+  ],
+  "piece_by_piece": [
+    {
+      "piece_id": "P01",
+      "check_type": "clean control",
+      "expected_rules": [],
+      "predicted_rules": [],
+      "overall_verdict": "PASS",
+      "consistent_3x": true,
+      "ipm_scores": []
+    },
+    {
+      "piece_id": "P02",
+      "check_type": "semantic + deterministic",
+      "expected_rules": [
+        "CLAIM-03",
+        "TONE-01"
+      ],
+      "predicted_rules": [
+        "CLAIM-03",
+        "TONE-01"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.98,
+        0.91
+      ]
+    },
+    {
+      "piece_id": "P03",
+      "check_type": "deterministic",
+      "expected_rules": [
+        "TERM-01",
+        "TERM-02"
+      ],
+      "predicted_rules": [
+        "TERM-01",
+        "TERM-02"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.97,
+        0.98
+      ]
+    },
+    {
+      "piece_id": "P04",
+      "check_type": "semantic (no approved fact)",
+      "expected_rules": [
+        "CLAIM-01"
+      ],
+      "predicted_rules": [
+        "CLAIM-01"
+      ],
+      "overall_verdict": "ADVISORY",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.86
+      ]
+    },
+    {
+      "piece_id": "P05",
+      "check_type": "fact contradiction",
+      "expected_rules": [
+        "CLAIM-02"
+      ],
+      "predicted_rules": [
+        "CLAIM-02"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.95
+      ]
+    },
+    {
+      "piece_id": "P06",
+      "check_type": "semantic",
+      "expected_rules": [
+        "LEGAL-01"
+      ],
+      "predicted_rules": [
+        "LEGAL-01"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.92
+      ]
+    },
+    {
+      "piece_id": "P07",
+      "check_type": "deterministic",
+      "expected_rules": [
+        "ACC-01"
+      ],
+      "predicted_rules": [
+        "ACC-01"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.85
+      ]
+    },
+    {
+      "piece_id": "P08",
+      "check_type": "deterministic",
+      "expected_rules": [
+        "ACC-03"
+      ],
+      "predicted_rules": [
+        "ACC-03"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.92
+      ]
+    },
+    {
+      "piece_id": "P09",
+      "check_type": "deterministic",
+      "expected_rules": [
+        "FMT-01"
+      ],
+      "predicted_rules": [
+        "FMT-01"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.91
+      ]
+    },
+    {
+      "piece_id": "P10",
+      "check_type": "semantic",
+      "expected_rules": [
+        "TONE-02"
+      ],
+      "predicted_rules": [
+        "TONE-02"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.94
+      ]
+    },
+    {
+      "piece_id": "P11",
+      "check_type": "clean control",
+      "expected_rules": [],
+      "predicted_rules": [],
+      "overall_verdict": "PASS",
+      "consistent_3x": true,
+      "ipm_scores": []
+    },
+    {
+      "piece_id": "P12",
+      "check_type": "deterministic",
+      "expected_rules": [
+        "ACC-04"
+      ],
+      "predicted_rules": [
+        "ACC-04"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.87
+      ]
+    },
+    {
+      "piece_id": "P13",
+      "check_type": "fact (expired fact)",
+      "expected_rules": [
+        "FACT-01"
+      ],
+      "predicted_rules": [
+        "FACT-01"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.96
+      ]
+    },
+    {
+      "piece_id": "P14",
+      "check_type": "semantic",
+      "expected_rules": [
+        "TONE-03"
+      ],
+      "predicted_rules": [
+        "TONE-03"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.88
+      ]
+    },
+    {
+      "piece_id": "P15",
+      "check_type": "clean control",
+      "expected_rules": [],
+      "predicted_rules": [],
+      "overall_verdict": "PASS",
+      "consistent_3x": true,
+      "ipm_scores": []
+    },
+    {
+      "piece_id": "P16",
+      "check_type": "deterministic",
+      "expected_rules": [
+        "TERM-03"
+      ],
+      "predicted_rules": [
+        "TERM-03"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.97
+      ]
+    },
+    {
+      "piece_id": "P17",
+      "check_type": "clean control",
+      "expected_rules": [],
+      "predicted_rules": [],
+      "overall_verdict": "PASS",
+      "consistent_3x": true,
+      "ipm_scores": []
+    },
+    {
+      "piece_id": "P18",
+      "check_type": "deterministic + semantic",
+      "expected_rules": [
+        "ACC-02",
+        "TONE-01"
+      ],
+      "predicted_rules": [
+        "ACC-02",
+        "TONE-01"
+      ],
+      "overall_verdict": "VIOLATION",
+      "consistent_3x": true,
+      "ipm_scores": [
+        0.96,
+        0.95
+      ]
+    }
+  ]
+}
