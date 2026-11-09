@@ -240,8 +240,7 @@ def generate_compliance_certificate(
         content_type in ["image", "banner", "raster_pdf", "scanned_pdf"]
         or bool(receipt.get("visual_audit"))
         or bool(receipt.get("image_structures"))
-        or any(str(f.get("rule_id", "")).startswith("VIS-") for f in findings)
-    )
+    ) and content_type != "text"
 
     if is_visual:
         va = receipt.get("visual_audit") or {}

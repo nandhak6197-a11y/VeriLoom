@@ -15,7 +15,7 @@ Both systems were evaluated on the identical **18-piece Northwind Academy Golden
 | **H2:** 3-Run Verdict & Rule Consistency | `77.8%` (14/18) | $\ge 90.0\%$ | **`100.0%` (18/18)** | **PASS** |
 | **H2:** Clean-Piece False Escalation Rate | `25.0%` (1/4) | $\le 8.0\%$ | **`0.0%` (0/4)** | **PASS** |
 | **H3:** High-Risk Claim Hallucination Rate | `15.0%` | `0.0%` | **`0.0%`** | **PASS** |
-| **H4:** Automated Triage Latency / Piece | `4.2 min` (Manual) | $\ge 45\%$ faster | **`501.1 ms` engine + 1-click review** | **PASS** |
+| **H4:** Automated Triage Latency / Piece | `4.2 min` (Manual) | $\ge 45\%$ faster | **`449.9 ms` engine + 1-click review** | **PASS** |
 | **H5:** Guideline Linter Defect Recall | `0.0%` (No linter) | $\ge 90.0\%$ | **`100.0%` (3/3 seeded)** | **PASS** |
 | **H6:** Must-Keep Point Preservation | `56.0%` | $\ge 95.0\%$ | **`100.0%`** | **PASS** |
 | **H6:** Mean Intent Preservation Metric ($\text{IPM}$) | `0.61` | $\ge 0.85$ | **`0.93` (`100.0%` $\ge 0.85$)** | **PASS** |

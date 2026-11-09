@@ -41,11 +41,19 @@ def parse_iso_date_safely(date_val: Any, fallback: Optional[date] = None) -> Opt
         return date_val.date()
 
     val_str = str(date_val).strip()
-    if not val_str or val_str.lower() in ("none", "null", "undefined", "n/a", "nat"):
+    if not val_str or val_str.lower() in ("none", "null", "undefined", "n/a", "nat", "nan"):
         return fallback
 
-    # Strip time portion if present (e.g. 2026-10-15T12:00:00Z)
-    val_str = val_str.split("T")[0].split(" ")[0].strip()
+    # If ISO timestamp containing 'T', validate the full ISO string
+    if "T" in val_str:
+        try:
+            clean_iso = val_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_iso)
+            return dt.date()
+        except Exception:
+            return fallback
+
+    val_str = val_str.split(" ")[0].strip()
 
     # Pattern 1: YYYY-M-D or YYYY/M/D or YYYY.M.D
     m = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$", val_str)
@@ -423,8 +431,11 @@ class EnterpriseKnowledgeSyncEngine:
                     # 2. Pricing / Discount check
                     elif (f_cat == "pricing" or "%" in metric) and "%" in metric:
                         disc_match = re.search(r"(\d+%)", content)
+                        metric_pct_match = re.search(r"(\d+%)", metric)
+                        metric_pct = metric_pct_match.group(1).lower() if metric_pct_match else metric.lower()
                         if disc_match:
-                            if disc_match.group(0).lower() != metric:
+                            draft_pct = disc_match.group(0).lower()
+                            if draft_pct != metric_pct:
                                 conflicts.append({
                                     "fact_id": f.get("fact_id"),
                                     "type": "DISCOUNT_MISMATCH",
