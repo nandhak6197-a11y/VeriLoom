@@ -361,6 +361,19 @@ def test_t1_f7_cryptographically_signed_audit_certificate():
     })
     asset_id = sub_resp.json()["asset_id"]
 
+    # Verify unapproved draft returns 400 Bad Request
+    unapp_res = client.get(f"/api/submissions/{asset_id}/certificate")
+    assert unapp_res.status_code == 400
+
+    # Approve asset via Brand Admin workflow
+    app_res = client.post("/api/workflow/approve", json={
+        "asset_id": asset_id,
+        "decision": "APPROVE",
+        "actor_name": "Nandha K",
+        "actor_role": "Brand Admin",
+    })
+    assert app_res.status_code == 200
+
     cert_resp = client.get(
         f"/api/submissions/{asset_id}/certificate?signer_name=Nandha+K&signer_role=Brand+Admin"
     )

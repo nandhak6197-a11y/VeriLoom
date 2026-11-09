@@ -550,6 +550,13 @@ def get_submission_certificate(
     if not asset:
         raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
 
+    if asset.status != "APPROVED":
+        raise HTTPException(
+            status_code=400,
+            detail="Asset must be in APPROVED status before an audit certificate can be generated.",
+        )
+
+
     fnds = db.query(FindingModel).filter(FindingModel.asset_id == asset_id).all()
     asset_dict = _serialize_asset(asset, fnds)
     findings_dicts = [

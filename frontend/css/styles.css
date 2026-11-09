@@ -10,63 +10,70 @@
      • Top Horizontal Navigation Bar: Clean Sans-Serif
    ============================================================================ */
 :root {
-  /* Salt & Pepper Core Surfaces (#2B2B2B family) */
-  --bg-topbar: #222222;
-  --bg-canvas: #2B2B2B;
-  --bg-card: #333333;
-  --bg-card-elevated: #3B3B3B;
-  --bg-input: #262626;
+  /* Obsidian & Emerald Core Surfaces */
+  --bg-topbar: #070B14;
+  --bg-canvas: #090D16;
+  --bg-card: #0F172A;
+  --bg-card-elevated: #1E293B;
+  --bg-input: #0A0F1D;
 
-  /* Salt & Pepper Typography (#FFFFFF, #D4D4D4, #B3B3B3) */
-  --text-primary: #FFFFFF;
-  --text-secondary: #D4D4D4;
-  --text-muted: #B3B3B3;
+  /* Typography */
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
 
-  /* Warm Sand & Champagne Accents (#F7E6CA, #E8D59E, #D9BBB0, #AD9C8E) */
-  --accent-cream: #F7E6CA;
-  --accent-champagne: #E8D59E;
-  --accent-rose: #D9BBB0;
-  --accent-taupe: #AD9C8E;
-
-  /* Borders & Focus */
-  --border-subtle: rgba(212, 212, 212, 0.14);
-  --border-card: rgba(212, 212, 212, 0.22);
-  --border-focus: #E8D59E;
-
-  /* Multi-layered Modern Elevation Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.16);
-  --shadow-card: 0 12px 32px -6px rgba(0, 0, 0, 0.38), 0 4px 12px -2px rgba(0, 0, 0, 0.24);
-  --shadow-hover: 0 18px 40px -8px rgba(0, 0, 0, 0.48), 0 6px 16px -3px rgba(0, 0, 0, 0.3);
-  --shadow-glow: 0 0 0 3px rgba(232, 213, 158, 0.22);
-
-  /* Semantic Status Tiers (Cohesive Salt & Pepper + Warm Sand Palette) */
-  --tier-violation-bg: rgba(239, 68, 68, 0.14);
-  --tier-violation-text: #FCA5A5;
-  --tier-violation-border: rgba(239, 68, 68, 0.45);
-
-  --tier-advisory-bg: rgba(232, 213, 158, 0.16);
-  --tier-advisory-text: #F7E6CA;
-  --tier-advisory-border: rgba(232, 213, 158, 0.48);
-
-  /* Round 3: Obsidian & Emerald Accents */
+  /* Verified Emerald, Regulatory Amber, Security Rose & Cyan Accents */
+  --accent-primary: #10B981;
   --accent-emerald: #10B981;
+  --accent-emerald-light: #34D399;
+  --accent-emerald-dark: #059669;
   --accent-emerald-glow: rgba(16, 185, 129, 0.25);
   --accent-amber: #F59E0B;
+  --accent-amber-light: #FCD34D;
+  --accent-rose: #F43F5E;
+  --accent-cyan: #38BDF8;
   --accent-obsidian: #090D16;
   --accent-slate: #0F172A;
+  --accent-slate-elevated: #1E293B;
 
-  --tier-human-bg: rgba(217, 187, 176, 0.16);
-  --tier-human-text: #F7E6CA;
-  --tier-human-border: rgba(217, 187, 176, 0.48);
+  /* Backwards compatibility aliases for warm sand / champagne references */
+  --accent-cream: #34D399;
+  --accent-champagne: #10B981;
+  --accent-taupe: #94A3B8;
 
-  --tier-pass-bg: rgba(247, 230, 202, 0.12);
-  --tier-pass-text: #F7E6CA;
-  --tier-pass-border: rgba(173, 156, 142, 0.55);
+  /* Borders & Focus */
+  --border-subtle: rgba(148, 163, 184, 0.14);
+  --border-card: rgba(148, 163, 184, 0.22);
+  --border-focus: #10B981;
 
-  /* Font Stacks — Uses Lining Numerals (no hanging/dropping oldstyle numbers) */
-  --font-claude-brand: "Cambria", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
-  --font-serif: "Cambria", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
-  --font-header: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif;
+  /* Multi-layered Modern Elevation Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 12px 32px -6px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 18px 40px -8px rgba(0, 0, 0, 0.6), 0 6px 16px -3px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+
+  /* Semantic Status Tiers */
+  --tier-violation-bg: rgba(244, 63, 94, 0.14);
+  --tier-violation-text: #FDA4AF;
+  --tier-violation-border: rgba(244, 63, 94, 0.45);
+
+  --tier-advisory-bg: rgba(245, 158, 11, 0.14);
+  --tier-advisory-text: #FCD34D;
+  --tier-advisory-border: rgba(245, 158, 11, 0.45);
+
+  --tier-human-bg: rgba(56, 189, 248, 0.14);
+  --tier-human-text: #7DD3FC;
+  --tier-human-border: rgba(56, 189, 248, 0.45);
+
+  --tier-pass-bg: rgba(16, 185, 129, 0.12);
+  --tier-pass-text: #34D399;
+  --tier-pass-border: rgba(16, 185, 129, 0.45);
+
+  /* Font Stacks */
+  --font-claude-brand: "Newsreader", "Merriweather", "Cambria", Georgia, serif;
+  --font-serif: "Newsreader", "Merriweather", "Cambria", Georgia, serif;
+  --font-header: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "Fira Code", monospace;
 
   /* Smooth Transition Curve */
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
@@ -77,7 +84,7 @@
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: "lnum" 1, "tnum" 1;
   scrollbar-width: thin;
-  scrollbar-color: rgba(173, 156, 142, 0.45) #222222;
+  scrollbar-color: rgba(148, 163, 184, 0.4) #070B14;
 }
 
 /* Custom Ultra-Slim Modern Scrollbars (6px, no arrows) */
@@ -87,16 +94,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #222222;
+  background: #070B14;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(173, 156, 142, 0.42);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(232, 213, 158, 0.7);
+  background: rgba(16, 185, 129, 0.7);
 }
 
 ::-webkit-scrollbar-button {
@@ -784,25 +791,53 @@ details.advanced-options[open] summary {
   cursor: wait;
 }
 
-/* Primary Button uses Warm Cream/Champagne (#F7E6CA / #E8D59E) on Deep Pepper (#2B2B2B) */
+/* Primary Button in Emerald (#10B981) */
 .btn-primary {
-  background: linear-gradient(180deg, #F7E6CA 0%, #E8D59E 100%);
-  color: #2B2B2B;
-  border-color: #E8D59E;
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  border-color: #34D399;
   font-weight: 600;
-  box-shadow: 0 4px 14px rgba(232, 213, 158, 0.22);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #FFFFFF 0%, #F7E6CA 100%);
-  color: #1A1A1A;
-  border-color: #F7E6CA;
-  box-shadow: 0 6px 20px rgba(247, 230, 202, 0.34);
+  background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
+  color: #FFFFFF;
+  border-color: #6EE7B7;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
+.btn-emerald-glowing {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-emerald-glowing:hover:not(:disabled) {
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.55);
+  transform: translateY(-1.5px);
+  color: #FFFFFF;
+}
+
+.btn-cta-cert {
+  background: rgba(16, 185, 129, 0.14);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+  font-weight: 600;
+}
+.btn-cta-cert:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10B981;
+  color: #FFFFFF;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
 }
 
 /* Prominent Primary CTA for Step 3 Approve Submission */
 .btn-cta-approve {
   background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
-  color: #111827;
+  color: #064E3B;
   border-color: #34D399;
   font-weight: 600;
   padding: 9px 18px;
@@ -811,7 +846,7 @@ details.advanced-options[open] summary {
 }
 .btn-cta-approve:hover:not(:disabled) {
   background: linear-gradient(180deg, #6EE7B7 0%, #34D399 100%);
-  color: #064E3B;
+  color: #022C22;
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
@@ -1403,10 +1438,28 @@ code {
 /* ============================================================================
    Round 3 Production Innovations: Obsidian & Emerald UI/UX Elements
    ============================================================================ */
+.jurisdiction-pill {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  transition: border-color 0.24s var(--ease-smooth), box-shadow 0.24s var(--ease-smooth);
+}
+
+.jurisdiction-pill:hover,
+.jurisdiction-pill:focus-within {
+  border-color: var(--accent-amber) !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25) !important;
+}
+
+.jurisdiction-pill label {
+  color: var(--accent-amber-light) !important;
+  font-weight: 600;
+}
+
+.jurisdiction-pill select,
 .top-jurisdiction-select {
   background: transparent;
   border: none;
-  color: var(--accent-emerald);
+  color: var(--text-primary);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -1414,10 +1467,168 @@ code {
   padding: 0 4px;
 }
 
+.jurisdiction-pill select option,
 .top-jurisdiction-select option {
   background: var(--bg-card);
   color: var(--text-primary);
 }
+
+/* Step 2 1-Click Compliant Legal Disclosure Card */
+.disclosure-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85));
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-left: 4px solid var(--accent-amber);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: fadeSlideUp 0.3s var(--ease-smooth) both;
+}
+
+.disclosure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.disclosure-preview-box {
+  margin: 10px 0;
+}
+
+.disclosure-preview-box code {
+  display: block;
+  padding: 10px 14px;
+  background: #070B14;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: #34D399;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.char-count-container {
+  margin-top: 12px;
+  background: rgba(10, 15, 29, 0.6);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.char-meter-track {
+  height: 7px;
+  background: #1E293B;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.char-meter-fill {
+  height: 100%;
+  background: var(--accent-emerald);
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Live Sync Enterprise Knowledge HUD */
+.knowledge-sync-hud {
+  background: #0B1120;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  animation: fadeSlideUp 0.35s var(--ease-smooth) both;
+}
+
+.sync-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sync-terminal-box {
+  background: #050811;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.terminal-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0F172A;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.terminal-output {
+  margin: 0;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #38BDF8;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  background: #050811;
+}
+
+/* Knowledge Graph Visualizer Card */
+#fact-graph-view-card {
+  background: #070B14;
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+#fact-knowledge-graph-canvas {
+  width: 100%;
+  max-width: 1000px;
+  height: auto;
+  background: #050811;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: crosshair;
+  display: block;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.legend-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-emerald .dot { background: var(--accent-emerald); box-shadow: 0 0 6px var(--accent-emerald); }
+.legend-rose .dot { background: var(--accent-rose); box-shadow: 0 0 6px var(--accent-rose); }
+.legend-cyan .dot { background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan); }
 
 #knowledge-graph-container {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -1453,6 +1664,25 @@ code {
   padding: 3px 8px;
   font-size: 0.76rem;
   font-weight: 600;
+}
+
+.safe-zone-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  margin-top: 8px;
+}
+
+.safe-zone-table th, .safe-zone-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.safe-zone-table th {
+  background: var(--bg-card-elevated);
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .hidden {

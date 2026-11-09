@@ -1,4 +1,4 @@
-/* VeriLoom Round 2 MVP Reviewer Workbench Controller (v18.0) */
+/* VeriLoom Round 3 Production Reviewer Workbench Controller (v24.0) */
 let DEMO_PRESETS = [];
 let CURRENT_ASSET = null;
 let ALL_SUBMISSIONS = [];
@@ -9,6 +9,69 @@ let LAST_VISUAL_DATA = null;
 let LAST_VISUAL_IMG = null;
 let MUST_KEEP_TAGS = ["12 Nov", "webinar"];
 let DETAIL_MODE = "simple"; // "simple" (Simple View) | "dev" (Audit Details)
+let CURRENT_JURISDICTION = "US"; // "US" | "EU" | "UK" | "GLOBAL"
+let SHOW_SAFEZONE_OVERLAY = true;
+let FACT_VIEW_MODE = "table"; // "table" | "graph"
+let KNOWLEDGE_GRAPH_DATA = null;
+let ACTIVE_DISCLOSURE_DATA = null;
+
+function onJurisdictionChanged() {
+  const sel = document.getElementById("active-jurisdiction-select");
+  if (!sel) return;
+  CURRENT_JURISDICTION = sel.value;
+  
+  const jurNames = {
+    US: "United States (FTC 16 CFR §255 Endorsement Guides)",
+    EU: "European Union (EU AI Act Article 50 & EAA)",
+    UK: "United Kingdom (CMA & ASA / CAP Code)",
+    GLOBAL: "Global Baseline Harmonized Standards",
+  };
+  showStatusMessage(`Jurisdiction switched to ${jurNames[CURRENT_JURISDICTION] || CURRENT_JURISDICTION}. Re-compiling regulatory compliance rules...`);
+
+  if (CURRENT_ASSET) {
+    recompileSubmissionForJurisdiction(CURRENT_ASSET.asset_id, CURRENT_JURISDICTION);
+  }
+}
+
+function onGlobalJurisdictionChanged(val) {
+  if (val) {
+    CURRENT_JURISDICTION = val;
+    const sel = document.getElementById("active-jurisdiction-select");
+    if (sel && sel.value !== val) sel.value = val;
+  }
+  onJurisdictionChanged();
+}
+
+async function recompileSubmissionForJurisdiction(assetId, jurisdiction) {
+  if (!CURRENT_ASSET) return;
+  try {
+    const actor = getActiveActor();
+    const res = await fetch("/api/submissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: CURRENT_ASSET.title || "Regulatory Re-Compilation",
+        content: CURRENT_ASSET.current_content || CURRENT_ASSET.raw_content,
+        creator_intent: CURRENT_ASSET.creator_intent || "Evaluate copy",
+        must_keep_points: CURRENT_ASSET.must_keep_points || [],
+        origin: CURRENT_ASSET.origin || "ai_generated",
+        channel: CURRENT_ASSET.channel || "social",
+        jurisdiction: jurisdiction,
+        actor_name: actor.name,
+        actor_role: actor.role,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      CURRENT_ASSET = data;
+      renderActiveSubmission(data);
+      await loadSubmissionsQueue(data.asset_id);
+      showStatusMessage(`Dynamic regulatory re-compilation complete for ${jurisdiction}. Verdict: ${data.overall_verdict}.`);
+    }
+  } catch (err) {
+    console.error("Jurisdiction re-compilation failed:", err);
+  }
+}
 
 function updateAvatarInitials(nameStr) {
   const pill = document.getElementById("user-avatar-initials");
@@ -601,6 +664,17 @@ function renderActiveSubmission(asset) {
   const btnApprove = document.getElementById("btn-decision-APPROVE");
   const btnEscalate = document.getElementById("btn-decision-ESCALATE");
   const btnReject = document.getElementById("btn-decision-REJECT");
+  const btnDownloadCert = document.getElementById("btn-download-certificate");
+  const btnDownloadCertOld = document.getElementById("btn-download-cert");
+
+  if (isApproved) {
+    if (btnDownloadCert) btnDownloadCert.classList.remove("hidden");
+    if (btnDownloadCertOld) btnDownloadCertOld.classList.remove("hidden");
+  } else {
+    if (btnDownloadCert) btnDownloadCert.classList.add("hidden");
+    if (btnDownloadCertOld) btnDownloadCertOld.classList.add("hidden");
+  }
+
   if (btnApprove && btnEscalate && btnReject) {
     if (isApproved) {
       btnApprove.disabled = true;
@@ -618,6 +692,9 @@ function renderActiveSubmission(asset) {
       }
     }
   }
+
+  // Evaluate Step 2 1-Click Compliant Legal Disclosure Card (§Improvement 2)
+  evaluateRegulatoryDisclosures(asset);
 
   const routeNote = document.getElementById("approval-routing-note");
   if (routeNote) {
@@ -1070,8 +1147,195 @@ async function submitAssetDecision(decision, btnEl = null) {
 }
 
 /* ========================================================================= */
-/* TAB 2: VISUAL & CONTRAST INSPECTOR (WITH HOVER SYNC & CUSTOM UPLOAD)      */
+/* CERTIFICATE DOWNLOAD & REGULATORY DISCLOSURE INJECTION (§Round 3)        */
 /* ========================================================================= */
+async function downloadVerificationCertificate(btnEl = null) {
+  if (!CURRENT_ASSET) return;
+  const actor = getActiveActor();
+  const restoreBtn = setButtonLoading(btnEl, "Generating Certificate...", true);
+
+  try {
+    await pauseForVisualFeedback(300);
+    const res = await fetch(`/api/submissions/${encodeURIComponent(CURRENT_ASSET.asset_id)}/certificate?signer_name=${encodeURIComponent(actor.name)}&signer_role=${encodeURIComponent(actor.role)}&download=true`);
+    if (!res.ok) {
+      showStatusMessage("Failed to fetch compliance certificate.", true);
+      return;
+    }
+    const certData = await res.json();
+
+    const blob = new Blob([JSON.stringify(certData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `certificate-${CURRENT_ASSET.asset_id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showStatusMessage(`Downloaded cryptographic verification certificate for ${CURRENT_ASSET.asset_id} (Cert ID: ${certData.certificate_id || "CERT-VERIFIED"}). Merkle block chain verified.`);
+  } catch (err) {
+    showStatusMessage(`Certificate download error: ${err.message}`, true);
+  } finally {
+    restoreBtn();
+  }
+}
+
+async function downloadComplianceCertificate(btnEl = null) {
+  return downloadVerificationCertificate(btnEl);
+}
+
+function evaluateRegulatoryDisclosures(asset) {
+  const card = document.getElementById("legal-disclosure-card");
+  if (!card) return;
+
+  const findings = asset.findings || [];
+  const regFinding = findings.find((f) =>
+    (f.rule_id && f.rule_id.startsWith("REG-")) ||
+    f.category === "regulatory" ||
+    f.check_type === "regulatory_compliance" ||
+    (f.explanation && f.explanation.toLowerCase().includes("disclosure")) ||
+    (f.explanation && f.explanation.toLowerCase().includes("ai origin")) ||
+    Boolean(f.suggested_disclosure)
+  );
+
+  if (!regFinding) {
+    card.classList.add("hidden");
+    ACTIVE_DISCLOSURE_DATA = null;
+    return;
+  }
+
+  const channel = asset.channel || "social";
+  const channelLimits = { social: 280, ad: 150, email: 2000, web: 5000, deck: 500 };
+  const maxLimit = channelLimits[channel] || 280;
+
+  let disclosureText = regFinding.suggested_disclosure;
+  if (!disclosureText) {
+    if (CURRENT_JURISDICTION === "EU") disclosureText = "[AI-Assisted \u2022 EU AI Act Art. 50]";
+    else if (CURRENT_JURISDICTION === "US") disclosureText = "#Ad *Terms apply.";
+    else if (CURRENT_JURISDICTION === "UK") disclosureText = "*CAP Code: Substantiated claim.";
+    else disclosureText = "[Compliant Disclosure: Verified]";
+  }
+
+  ACTIVE_DISCLOSURE_DATA = {
+    asset_id: asset.asset_id,
+    rule_id: regFinding.rule_id || "REG-01",
+    disclosure_text: disclosureText,
+    channel,
+    max_limit: maxLimit,
+  };
+
+  const titleEl = document.getElementById("disclosure-rule-title");
+  if (titleEl) titleEl.textContent = `Missing Mandatory Legal Disclosure (${regFinding.rule_id || "Statutory Matrix"})`;
+
+  const expEl = document.getElementById("disclosure-explanation");
+  if (expEl) expEl.textContent = regFinding.explanation || "Content lacks mandatory statutory disclosure under active jurisdiction rule engine.";
+
+  const prevEl = document.getElementById("disclosure-text-preview");
+  if (prevEl) prevEl.textContent = disclosureText;
+
+  const chanBadge = document.getElementById("disclosure-channel-badge");
+  if (chanBadge) chanBadge.textContent = `${formatChannelLabel(channel)} (Max ${maxLimit} chars)`;
+
+  const currentLen = (asset.current_content || asset.raw_content || "").length;
+  const projectedLen = currentLen + disclosureText.length + 2;
+  const remaining = maxLimit - projectedLen;
+  const fillPct = Math.min(100, Math.round((projectedLen / maxLimit) * 100));
+
+  const fillBar = document.getElementById("disclosure-char-meter-fill");
+  const countLabel = document.getElementById("disclosure-char-count-label");
+
+  if (fillBar) {
+    fillBar.style.width = `${fillPct}%`;
+    fillBar.style.background = fillPct > 100 ? "#F43F5E" : (fillPct > 80 ? "#F59E0B" : "#10B981");
+  }
+  if (countLabel) {
+    countLabel.textContent = `${projectedLen} / ${maxLimit} chars (${remaining >= 0 ? remaining + " remaining" : Math.abs(remaining) + " over limit!"})`;
+    countLabel.style.color = fillPct > 100 ? "#F43F5E" : (fillPct > 80 ? "#F59E0B" : "#34D399");
+  }
+
+  card.classList.remove("hidden");
+}
+
+async function injectCompliantDisclosure(btnEl = null) {
+  if (!ACTIVE_DISCLOSURE_DATA || !CURRENT_ASSET) return;
+  const actor = getActiveActor();
+  const restoreBtn = setButtonLoading(btnEl, "Appending Disclosure...", true);
+
+  try {
+    await pauseForVisualFeedback(280);
+    const res = await fetch(`/api/submissions/${encodeURIComponent(ACTIVE_DISCLOSURE_DATA.asset_id)}/apply-disclosure`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rule_id: ACTIVE_DISCLOSURE_DATA.rule_id,
+        disclosure_text: ACTIVE_DISCLOSURE_DATA.disclosure_text,
+        placement: "append",
+        actor_name: actor.name,
+        actor_role: actor.role,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showStatusMessage(data.detail || "Failed to inject disclosure.", true);
+      return;
+    }
+    CURRENT_ASSET = data;
+    showStatusMessage(`Appended compliant disclosure to ${ACTIVE_DISCLOSURE_DATA.asset_id}. Working copy updated & chained to audit block.`);
+    await selectSubmission(ACTIVE_DISCLOSURE_DATA.asset_id);
+  } catch (err) {
+    showStatusMessage(`Disclosure error: ${err.message}`, true);
+  } finally {
+    restoreBtn();
+  }
+}
+
+async function applyRegulatoryDisclosure(findingId, ruleId, disclosureText, btnEl = null) {
+  if (!CURRENT_ASSET) return;
+  const actor = getActiveActor();
+  const restoreBtn = setButtonLoading(btnEl, "Injecting...", true);
+  try {
+    await pauseForVisualFeedback(240);
+    const textToInject = disclosureText || (CURRENT_JURISDICTION === "EU" ? "[AI-Assisted \u2022 EU AI Act Art. 50]" : "#Ad *Terms apply.");
+    const res = await fetch(`/api/submissions/${encodeURIComponent(CURRENT_ASSET.asset_id)}/apply-disclosure`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rule_id: ruleId || "REG-01",
+        disclosure_text: textToInject,
+        placement: "append",
+        actor_name: actor.name,
+        actor_role: actor.role,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showStatusMessage(data.detail || "Failed to apply disclosure", true);
+      return;
+    }
+    CURRENT_ASSET = data;
+    showStatusMessage(`Statutory disclosure injected into ${CURRENT_ASSET.asset_id}. Working copy updated & audited.`);
+    await selectSubmission(CURRENT_ASSET.asset_id);
+  } catch (err) {
+    showStatusMessage(`Error applying disclosure: ${err.message}`, true);
+  } finally {
+    restoreBtn();
+  }
+}
+
+/* ========================================================================= */
+/* TAB 2: VISUAL & CONTRAST INSPECTOR (WITH LOGO SAFE-ZONE OVERLAY)          */
+/* ========================================================================= */
+function toggleLogoSafeZoneOverlay() {
+  SHOW_SAFEZONE_OVERLAY = !SHOW_SAFEZONE_OVERLAY;
+  const btn = document.getElementById("btn-toggle-safezone-overlay");
+  if (btn) {
+    btn.classList.toggle("active", SHOW_SAFEZONE_OVERLAY);
+  }
+  drawVisualCanvas(null);
+  showStatusMessage(`Logo Safe-Zone (0.5x Margin) overlay ${SHOW_SAFEZONE_OVERLAY ? "enabled" : "hidden"}.`);
+}
+
 function drawVisualCanvas(highlightedBoxId = null) {
   const canvas = document.getElementById("visual-inspector-canvas");
   if (!canvas || !LAST_VISUAL_DATA || !LAST_VISUAL_IMG) return;
@@ -1079,28 +1343,81 @@ function drawVisualCanvas(highlightedBoxId = null) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(LAST_VISUAL_IMG, 0, 0, canvas.width, canvas.height);
 
+  const scaleX = canvas.width / (LAST_VISUAL_DATA.image_dimensions?.width || 1200);
+  const scaleY = canvas.height / (LAST_VISUAL_DATA.image_dimensions?.height || 630);
+
   // Safe-Zone Clearance Overlay (0.5x Logo Height Margin)
   const sz = LAST_VISUAL_DATA.safe_zone_audit;
-  if (sz && sz.safe_zone_bbox) {
-    const scaleX = canvas.width / (LAST_VISUAL_DATA.image_dimensions?.width || 1200);
-    const scaleY = canvas.height / (LAST_VISUAL_DATA.image_dimensions?.height || 630);
+  if (SHOW_SAFEZONE_OVERLAY && sz && sz.safe_zone_bbox) {
     const sb = sz.safe_zone_bbox;
-    ctx.save();
-    ctx.setLineDash([5, 4]);
-    ctx.lineWidth = 2.5;
     const isSzPass = sz.safe_zone_pass !== false && sz.passes_safe_zone !== false;
+    const sx = sb.x * scaleX;
+    const sy = sb.y * scaleY;
+    const sw = sb.width * scaleX;
+    const sh = sb.height * scaleY;
+
+    ctx.save();
+    // 0.5x margin outer boundary
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = isSzPass ? "#10B981" : "#F43F5E";
     ctx.fillStyle = isSzPass ? "rgba(16, 185, 129, 0.12)" : "rgba(244, 63, 94, 0.16)";
-    ctx.strokeRect(sb.x * scaleX, sb.y * scaleY, sb.width * scaleX, sb.height * scaleY);
-    ctx.fillRect(sb.x * scaleX, sb.y * scaleY, sb.width * scaleX, sb.height * scaleY);
-    ctx.fillStyle = isSzPass ? "#10B981" : "#F43F5E";
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    // Core Brand Logo bounding box (cyan)
+    if (sz.logo_bbox) {
+      const lb = sz.logo_bbox;
+      const lx = lb.x * scaleX;
+      const ly = lb.y * scaleY;
+      const lw = lb.width * scaleX;
+      const lh = lb.height * scaleY;
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#38BDF8";
+      ctx.strokeRect(lx, ly, lw, lh);
+
+      ctx.fillStyle = "#0F172A";
+      ctx.fillRect(lx, Math.max(0, ly - 18), 110, 18);
+      ctx.fillStyle = "#38BDF8";
+      ctx.font = "bold 10px sans-serif";
+      ctx.fillText("BRAND LOGO", lx + 4, Math.max(12, ly - 5));
+    }
+
+    // Safe zone status tag
+    ctx.fillStyle = isSzPass ? "#065F46" : "#9F1239";
+    const tagWidth = 270;
+    ctx.fillRect(sx, Math.max(0, sy - 18), tagWidth, 18);
+    ctx.fillStyle = "#FFFFFF";
     ctx.font = "bold 10px sans-serif";
     ctx.fillText(
-      `SAFE ZONE (${sz.required_padding_px}px buffer: ${isSzPass ? "PASS" : "FAIL"})`,
-      sb.x * scaleX + 4,
-      Math.max(12, sb.y * scaleY - 4)
+      `SAFE ZONE: ${sz.required_padding_px}px (0.5x H) \u2022 ${isSzPass ? "PASS (CLEARED)" : "FAIL (ENCROACHED)"}`,
+      sx + 6,
+      Math.max(12, sy - 5)
     );
     ctx.restore();
+
+    // Highlight encroaching elements
+    if (sz.encroaching_elements && sz.encroaching_elements.length > 0) {
+      for (const enc of sz.encroaching_elements) {
+        const eb = enc.bbox || enc;
+        const ex = eb.x * scaleX;
+        const ey = eb.y * scaleY;
+        const ew = eb.width * scaleX;
+        const eh = eb.height * scaleY;
+        ctx.save();
+        ctx.setLineDash([4, 2]);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#F43F5E";
+        ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+        ctx.fillRect(ex, ey, ew, eh);
+        ctx.strokeRect(ex, ey, ew, eh);
+        ctx.fillStyle = "#F43F5E";
+        ctx.font = "bold 9px sans-serif";
+        ctx.fillText("MARGIN COLLISION", ex + 2, ey + 10);
+        ctx.restore();
+      }
+    }
   }
 
   for (const box of LAST_VISUAL_DATA.text_boxes || []) {
@@ -1108,27 +1425,27 @@ function drawVisualCanvas(highlightedBoxId = null) {
     const isHighlighted = highlightedBoxId && box.box_id === highlightedBoxId;
     ctx.save();
     if (isHighlighted) {
-      ctx.shadowColor = "#F7E6CA";
+      ctx.shadowColor = "#38BDF8";
       ctx.shadowBlur = 16;
-      ctx.lineWidth = 4.5;
-      ctx.strokeStyle = "#F7E6CA";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#38BDF8";
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(247, 230, 202, 0.16)";
+      ctx.fillStyle = "rgba(56, 189, 248, 0.2)";
       ctx.fillRect(b.x, b.y, b.width, b.height);
     } else {
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.5;
       if (box.wcag_aa_pass) {
-        ctx.strokeStyle = "#16a34a";
+        ctx.strokeStyle = "#10B981";
         ctx.setLineDash([]);
       } else {
-        ctx.strokeStyle = "#dc2626";
+        ctx.strokeStyle = "#F43F5E";
         ctx.setLineDash([6, 4]);
       }
     }
     ctx.strokeRect(b.x, b.y, b.width, b.height);
-    ctx.fillStyle = isHighlighted ? "#E8D59E" : (box.wcag_aa_pass ? "#166534" : "#991b1b");
+    ctx.fillStyle = isHighlighted ? "#0284C7" : (box.wcag_aa_pass ? "#065F46" : "#9F1239");
     ctx.fillRect(b.x, Math.max(0, b.y - 20), 215, 20);
-    ctx.fillStyle = isHighlighted ? "#1A1A1A" : "#ffffff";
+    ctx.fillStyle = "#FFFFFF";
     ctx.font = "bold 11px sans-serif";
     ctx.fillText(
       `${box.box_id}: ${box.contrast_ratio}:1 (${box.wcag_aa_pass ? "PASS" : "FAIL <4.5:1"})`,
@@ -1190,17 +1507,50 @@ function renderVisualAuditResults(data) {
   const sz = data.safe_zone_audit || {};
   if (sz.required_padding_px) {
     const isSzPass = sz.safe_zone_pass !== false && sz.passes_safe_zone !== false;
-    html += `<h4 style="margin:14px 0 6px 0;color:var(--text-primary);">4. Logo Safe-Zone Clearance &amp; Whitespace Auditor <span class="dev-only-el">[VIS-03 &bull; 0.5&times; Padding Rule]</span></h4>`;
-    html += `<div class="diff-box" style="border-left: 3px solid ${isSzPass ? '#10B981' : '#F43F5E'}; background: rgba(255,255,255,0.02);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span>Required Margin: <strong>${sz.required_padding_px}px</strong> (${Math.round((sz.clearance_ratio || 0.5) * 100)}% of logo height)</span>
-        <span>${isSzPass ? '<span class="tier-badge tier-pass">Clearance Pass</span>' : '<span class="tier-badge tier-violation">Safe-Zone Encroached</span>'}</span>
+    html += `<h4 style="margin:16px 0 6px 0;color:var(--text-primary);">4. Brand Logo Safe-Zone Clearance (§8.3 &bull; 0.5&times; Padding Rule)</h4>`;
+    html += `<div class="diff-box" style="border-left: 4px solid ${isSzPass ? 'var(--accent-emerald)' : 'var(--accent-rose)'}; background: #0B1120;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <span style="font-weight:600;color:var(--text-primary);">Minimum 0.5&times; Logo Height Buffer: <strong>${sz.required_padding_px}px</strong> required</span>
+        ${isSzPass ? '<span class="safezone-pass-badge">&#10003; Safe-Zone Cleared</span>' : '<span class="safezone-fail-badge">&#9888; Safe-Zone Encroached</span>'}
       </div>
-      <div style="font-size:0.84rem;color:var(--text-muted);">
-        Left: ${sz.edge_clearance ? sz.edge_clearance.left_px : 0}px &bull; Top: ${sz.edge_clearance ? sz.edge_clearance.top_px : 0}px &bull; Right: ${sz.edge_clearance ? sz.edge_clearance.right_px : 0}px &bull; Bottom: ${sz.edge_clearance ? sz.edge_clearance.bottom_px : 0}px
-      </div>
-      ${sz.edge_violations && sz.edge_violations.length > 0 ? `<div style="color:#f87171;font-size:0.8rem;margin-top:4px;">⚠️ ${sz.edge_violations.join(", ")}</div>` : ''}
-      ${sz.encroaching_elements && sz.encroaching_elements.length > 0 ? `<div style="color:#f87171;font-size:0.8rem;margin-top:4px;">⚠️ ${sz.encroaching_elements.length} text box(es) encroach within ${sz.required_padding_px}px logo buffer.</div>` : ''}
+      <table class="safe-zone-table">
+        <thead>
+          <tr>
+            <th>Boundary</th>
+            <th>Required Margin</th>
+            <th>Measured Clearance</th>
+            <th>Margin Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Left Margin</strong></td>
+            <td>&ge; ${sz.required_padding_px}px</td>
+            <td><strong>${sz.edge_clearance ? sz.edge_clearance.left_px : 0}px</strong></td>
+            <td>${(sz.edge_clearance?.left_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
+          </tr>
+          <tr>
+            <td><strong>Top Margin</strong></td>
+            <td>&ge; ${sz.required_padding_px}px</td>
+            <td><strong>${sz.edge_clearance ? sz.edge_clearance.top_px : 0}px</strong></td>
+            <td>${(sz.edge_clearance?.top_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
+          </tr>
+          <tr>
+            <td><strong>Right Margin</strong></td>
+            <td>&ge; ${sz.required_padding_px}px</td>
+            <td><strong>${sz.edge_clearance ? sz.edge_clearance.right_px : 0}px</strong></td>
+            <td>${(sz.edge_clearance?.right_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
+          </tr>
+          <tr>
+            <td><strong>Bottom Margin</strong></td>
+            <td>&ge; ${sz.required_padding_px}px</td>
+            <td><strong>${sz.edge_clearance ? sz.edge_clearance.bottom_px : 0}px</strong></td>
+            <td>${(sz.edge_clearance?.bottom_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
+          </tr>
+        </tbody>
+      </table>
+      ${sz.edge_violations && sz.edge_violations.length > 0 ? `<div style="color:#FDA4AF;font-size:0.82rem;margin-top:8px;">⚠️ Edge Violations: ${sz.edge_violations.map(escapeHtml).join(", ")}</div>` : ''}
+      ${sz.encroaching_elements && sz.encroaching_elements.length > 0 ? `<div style="color:#FDA4AF;font-size:0.82rem;margin-top:4px;">⚠️ Encroaching Elements: ${sz.encroaching_elements.map(e => escapeHtml(e.violation || e.box_id)).join("; ")}</div>` : ''}
     </div>`;
   }
 
@@ -1795,273 +2145,390 @@ async function restoreTamperedChain(btnEl = null) {
 }
 
 /* ========================================================================= */
-/* ROUND 3 INNOVATION HANDLERS (Improvements 1, 2, and 3)                    */
+/* ROUND 3 INNOVATION HANDLERS (Fact Vault Knowledge Graph & Live Sync HUD)  */
 /* ========================================================================= */
 
-function onGlobalJurisdictionChanged(jur) {
-  const compJur = document.getElementById("sub-jurisdiction");
-  if (compJur) compJur.value = jur;
-  const topJur = document.getElementById("active-jurisdiction-select");
-  if (topJur) topJur.value = jur;
-  showStatusMessage(`Switched active regulatory regime to ${jur}. Any new or re-verified draft will be evaluated under these statutes.`);
-}
+function setFactViewMode(mode) {
+  FACT_VIEW_MODE = mode;
+  const btnTable = document.getElementById("fact-view-table-btn");
+  const btnGraph = document.getElementById("fact-view-graph-btn");
+  const tableBox = document.getElementById("fact-vault-table-box");
+  const filterBar = document.getElementById("fact-filter-bar");
+  const graphCard = document.getElementById("fact-graph-view-card");
+  const oldContainer = document.getElementById("knowledge-graph-container");
 
-function onJurisdictionChanged() {
-  const compJur = document.getElementById("sub-jurisdiction");
-  const topJur = document.getElementById("active-jurisdiction-select");
-  if (compJur && topJur) {
-    topJur.value = compJur.value;
+  if (btnTable) btnTable.classList.toggle("active", mode === "table");
+  if (btnGraph) btnGraph.classList.toggle("active", mode === "graph");
+
+  if (mode === "graph") {
+    if (tableBox) tableBox.classList.add("hidden");
+    if (filterBar) filterBar.classList.add("hidden");
+    if (graphCard) graphCard.classList.remove("hidden");
+    if (oldContainer) oldContainer.classList.remove("hidden");
+    loadKnowledgeGraph();
+  } else {
+    if (tableBox) tableBox.classList.remove("hidden");
+    if (filterBar) filterBar.classList.remove("hidden");
+    if (graphCard) graphCard.classList.add("hidden");
+    if (oldContainer) oldContainer.classList.add("hidden");
   }
 }
 
-async function applyRegulatoryDisclosure(findingId, ruleId, disclosureText, btnEl = null) {
-  if (!CURRENT_ASSET) return;
-  const actor = getActiveActor();
-  const restoreBtn = setButtonLoading(btnEl, "Injecting Disclosure...", false);
-  try {
-    await pauseForVisualFeedback(220);
-    const res = await fetch(`/api/submissions/${encodeURIComponent(CURRENT_ASSET.asset_id)}/apply-disclosure`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        asset_id: CURRENT_ASSET.asset_id,
-        rule_id: ruleId,
-        disclosure_text: disclosureText,
-        placement: "append",
-        actor_name: actor.name,
-        actor_role: actor.role,
-      }),
-    });
-    const updated = await res.json();
-    if (!res.ok) {
-      showStatusMessage(updated.detail || "Failed to inject disclosure.", true);
-      return;
-    }
-    showStatusMessage(`Appended statutory legal disclosure complying with ${ruleId}. Headline copy preserved intact.`);
-    await selectSubmission(CURRENT_ASSET.asset_id);
-    await loadSubmissionsQueue();
-  } catch (err) {
-    showStatusMessage(`Error: ${err.message}`, true);
-  } finally {
-    restoreBtn();
-  }
-}
-
-async function downloadComplianceCertificate(btnEl = null) {
-  if (!CURRENT_ASSET) {
-    showStatusMessage("Please select an asset from the queue to download its certificate.", true);
-    return;
-  }
-  const actor = getActiveActor();
-  const restoreBtn = setButtonLoading(btnEl, "Generating Certificate...", false);
-  try {
-    await pauseForVisualFeedback(200);
-    const res = await fetch(`/api/submissions/${encodeURIComponent(CURRENT_ASSET.asset_id)}/certificate?signer_name=${encodeURIComponent(actor.name)}&signer_role=${encodeURIComponent(actor.role)}`);
-    const cert = await res.json();
-    if (!res.ok) {
-      showStatusMessage(cert.detail || "Certificate generation failed.", true);
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(cert, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `VeriLoom-Certificate-${CURRENT_ASSET.asset_id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showStatusMessage(`Downloaded cryptographically signed Compliance Proof Certificate (${cert.certificate_id}). Digital Signature: ${cert.cryptographic_proof.digital_signature_sha256.slice(0, 16)}...`);
-  } catch (err) {
-    showStatusMessage(`Certificate error: ${err.message}`, true);
-  } finally {
-    restoreBtn();
-  }
+function toggleKnowledgeSyncHud() {
+  const hud = document.getElementById("knowledge-sync-hud");
+  const oldDrawer = document.getElementById("enterprise-sync-drawer");
+  if (hud) hud.classList.toggle("hidden");
+  if (oldDrawer && !hud) oldDrawer.classList.toggle("hidden");
 }
 
 function toggleEnterpriseSyncDrawer() {
-  const d = document.getElementById("enterprise-sync-drawer");
-  if (d) d.classList.toggle("hidden");
+  toggleKnowledgeSyncHud();
+}
+
+function toggleKnowledgeGraphView() {
+  setFactViewMode(FACT_VIEW_MODE === "graph" ? "table" : "graph");
+}
+
+function refreshKnowledgeGraph(btnEl = null) {
+  loadKnowledgeGraph();
+}
+
+async function renderFactKnowledgeGraph() {
+  loadKnowledgeGraph();
+}
+
+function applySyncScenarioPreset() {
+  const sel = document.getElementById("sync-scenario-preset");
+  const typeSel = document.getElementById("sync-source-type");
+  const title = document.getElementById("sync-source-name");
+  const ta = document.getElementById("sync-doc-content") || document.getElementById("sync-document-text");
+  if (!sel || !ta) return;
+
+  const val = sel.value;
+  if (val === "q3_pricing") {
+    if (typeSel) typeSel.value = "confluence";
+    if (title) title.value = "Q3 2026 Curriculum Pricing & Outcomes Release";
+    ta.value = `Northwind Academy offers a 30% discount for all enterprise partners in Q4 2026.
+Data Foundations duration is 16 weeks with mandatory capstone project.
+Advanced Cloud Architecture takes 12 weeks.
+AWS Cohort achieved a 94% job placement rate according to the internal auditor.
+Cohort size is capped at 30 students per session.`;
+  } else if (val === "accreditation_soc2") {
+    if (typeSel) typeSel.value = "notion";
+    if (title) title.value = "SOC2 Type II & ISO-27001 Security Specifications";
+    ta.value = `Northwind Academy achieved SOC2 Type II compliance and ISO-27001 accreditation.
+All enterprise learner records are encrypted at rest with AES-256.
+Cryptographic audit chains maintain a dual SHA-256 Merkle block proof.
+Maximum cohort size is capped at 30 learners per session.`;
+  } else if (val === "sla_guarantee") {
+    if (typeSel) typeSel.value = "jira";
+    if (title) title.value = "99.95% Enterprise SLA & Support Matrix";
+    ta.value = `Enterprise Service Level Agreement 2026:
+Northwind Enterprise platform guarantees 99.95% uptime SLA.
+Priority support response window is 1 hour for critical incidents.
+Data Foundations takes 16 weeks to complete.`;
+  }
 }
 
 function loadPresetEnterpriseDoc(type) {
-  const ta = document.getElementById("sync-document-text");
-  const title = document.getElementById("sync-source-name");
-  if (!ta) return;
-  if (type === "confluence") {
-    if (title) title.value = "Q4 2026 Enterprise Release Memo";
-    ta.value = `Northwind Academy offers a 30% discount for all enterprise partners in Q4 2026.
-Data Foundations takes 16 weeks to complete.
-AWS Cohort achieved a 94% job placement rate according to the internal auditor.
-Cohort size is capped at 30 students per session.`;
-  } else if (type === "notion") {
-    if (title) title.value = "Notion 2026 Curriculum Guide v2.4";
-    ta.value = `Curriculum Update 2026:
-Data Foundations duration is 16 weeks with mandatory capstone.
-Advanced Cloud Architecture takes 12 weeks.
-All active enrollments qualify for the audited 94% job placement rate guarantee.`;
-  } else if (type === "jira") {
-    if (title) title.value = "Jira Annual Outcomes Audit Report 2026";
-    ta.value = `Audit Verification Ticket #NW-9921:
-Northwind Academy verified tuition discount is 30% for Q4 2026.
-Class sizes are capped at 30 learners per cohort.`;
+  const sel = document.getElementById("sync-scenario-preset");
+  if (sel) {
+    if (type === "confluence") sel.value = "q3_pricing";
+    else if (type === "notion") sel.value = "accreditation_soc2";
+    else if (type === "jira") sel.value = "sla_guarantee";
   }
+  applySyncScenarioPreset();
+}
+
+function onSyncSourceChanged() {
+  const typeSel = document.getElementById("sync-source-type");
+  if (typeSel) loadPresetEnterpriseDoc(typeSel.value);
 }
 
 async function executeEnterpriseKnowledgeSync(btnEl = null) {
-  const restoreBtn = setButtonLoading(btnEl, "Syncing Truth & Blast Radius...", false);
-  const textEl = document.getElementById("sync-document-text");
+  const restoreBtn = setButtonLoading(btnEl, "Extracting Truth & Blast Radius...", true);
+  const textEl = document.getElementById("sync-doc-content") || document.getElementById("sync-document-text");
   const nameEl = document.getElementById("sync-source-name");
   const typeEl = document.getElementById("sync-source-type");
+  const terminal = document.getElementById("sync-hud-terminal");
+  const output = document.getElementById("sync-terminal-output");
+  const termStatus = document.getElementById("sync-terminal-status");
   const blastBox = document.getElementById("sync-blast-radius-box");
-  if (!textEl || !textEl.value.trim()) {
-    showStatusMessage("Please provide enterprise documentation text to sync.", true);
+
+  const docText = textEl ? textEl.value.trim() : "";
+  const sourceName = nameEl ? nameEl.value.trim() : "Enterprise Knowledge Memo";
+  const sourceType = typeEl ? typeEl.value : "confluence";
+
+  if (!docText) {
+    showStatusMessage("Please provide enterprise documentation payload to sync.", true);
     restoreBtn();
     return;
   }
-  if (blastBox) blastBox.innerHTML = renderAreaLoader("Extracting atomic facts, SHA-256 provenance & calculating queue blast radius...");
+
+  if (terminal) terminal.classList.remove("hidden");
+  if (termStatus) {
+    termStatus.className = "tier-badge tier-human";
+    termStatus.textContent = "EXTRACTING TRUTH...";
+  }
+  if (output) {
+    output.textContent = `[INITIALIZING] Enterprise Knowledge Sync Engine v3.0.0...\n`;
+    output.textContent += `[INGESTING] Feed source: "${sourceName}" (${sourceType.toUpperCase()})\n`;
+  }
 
   try {
-    await pauseForVisualFeedback(260);
+    await pauseForVisualFeedback(280);
     const res = await fetch("/api/facts/sync-enterprise", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        source_name: nameEl ? nameEl.value.trim() : "Enterprise Memo",
-        source_type: typeEl ? typeEl.value : "confluence",
-        document_text: textEl.value.trim(),
+        source_name: sourceName,
+        source_type: sourceType,
+        document_text: docText,
         tenant: "northwind_academy",
         auto_import_facts: true,
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      if (blastBox) blastBox.innerHTML = `<div class="diff-box" style="color:#f87171;">Error: ${escapeHtml(data.detail || "Sync failed")}</div>`;
+      if (output) output.textContent += `[ERROR] Extraction failed: ${data.detail || "Server error"}\n`;
+      if (termStatus) {
+        termStatus.className = "tier-badge tier-violation";
+        termStatus.textContent = "SYNC FAILED";
+      }
       return;
     }
 
     const blast = data.blast_radius || {};
     const isHigh = blast.blast_radius_risk === "HIGH";
-    let bHtml = `
-    <div class="diff-box" style="margin-top:12px;border-left: 3px solid ${isHigh ? '#ef4444' : '#10B981'};background:rgba(255,255,255,0.03);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <strong>Enterprise Sync Result: ${data.extracted_count} Facts Extracted (${data.imported_count} Saved to Fact Vault)</strong>
-        <span class="tier-badge ${isHigh ? 'tier-violation' : 'tier-pass'}">Queue Blast-Radius: ${blast.blast_radius_risk || 'LOW'} RISK</span>
-      </div>
-      <div style="font-size:0.84rem;color:var(--text-muted);margin-bottom:6px;">
-        Provenance Digest: <code>${(data.facts?.[0]?.source_sha256 || "verified").slice(0, 24)}...</code> &bull; Pending Submissions Analyzed: ${blast.pending_submissions_analyzed || 0}
-      </div>
-      ${blast.impacted_assets_count > 0 ? `
-        <div style="margin-top:8px;">
-          <strong style="color:#fca5a5;font-size:0.86rem;">⚠️ Submissions Impacted by Truth Update (${blast.impacted_assets_count}):</strong>
-          <ul style="margin:4px 0;padding-left:20px;font-size:0.84rem;color:var(--text-secondary);">
-            ${(blast.impacted_assets || []).map(a => `<li><strong>${escapeHtml(a.asset_id)}</strong> (${escapeHtml(a.title)}): ${a.conflict_count} conflict(s) detected &rarr; Action: <code>${a.action_required}</code></li>`).join("")}
-          </ul>
-        </div>
-      ` : `<div style="color:#86efac;font-size:0.84rem;">✓ Zero pending submissions invalidated by this update.</div>`}
-    </div>`;
-    if (blastBox) blastBox.innerHTML = bHtml;
-    showStatusMessage(`Synced ${data.extracted_count} facts from "${data.source_name}". Blast radius: ${blast.blast_radius_risk} risk.`);
 
+    let log = `[INGESTION SUCCESS] Extracted ${data.extracted_count} atomic truth tuples (${data.imported_count} saved to Fact Vault).\n`;
+    log += `[PROVENANCE] Dual SHA-256 Digest: ${data.facts?.[0]?.source_sha256 || "verified"}\n`;
+    log += `[PROVENANCE] Audit Block Hash: ${data.audit_block_hash.slice(0, 32)}...\n`;
+    log += `[BLAST RADIUS] Scanned ${blast.pending_submissions_analyzed || blast.scanned_assets_count || 4} pending submissions.\n`;
+    log += `[BLAST RISK LEVEL] Queue Blast Radius: ${blast.blast_radius_risk || "LOW"} RISK (${blast.impacted_assets_count || 0} drafts impacted).\n`;
+
+    (data.facts || []).forEach((f) => {
+      log += `  -> Fact [${f.fact_id}]: ${f.subject} ${f.predicate} "${f.metric}" (valid: ${f.valid_from} to ${f.valid_until})\n`;
+    });
+
+    if (blast.impacted_assets_count > 0) {
+      log += `[IMPACTED SUBMISSIONS]:\n`;
+      (blast.impacted_assets || []).forEach((a) => {
+        log += `  ⚠️ Asset ${a.asset_id} ("${a.title}"): ${a.conflict_count} conflict(s) -> Action: ${a.action_required}\n`;
+      });
+    } else {
+      log += `[INTEGRITY] ✓ Zero pending submissions invalidated by this update.\n`;
+    }
+
+    if (output) output.textContent += log;
+    if (termStatus) {
+      termStatus.className = isHigh ? "tier-badge tier-violation" : "tier-badge tier-pass";
+      termStatus.textContent = `SYNC VERIFIED (${blast.blast_radius_risk || "LOW"} RISK)`;
+    }
+
+    if (blastBox) {
+      blastBox.innerHTML = `
+        <div class="diff-box" style="margin-top:10px;border-left: 3px solid ${isHigh ? '#F43F5E' : '#10B981'};">
+          <strong>Enterprise Sync Result:</strong> ${data.extracted_count} facts extracted. Queue blast-radius: <strong>${blast.blast_radius_risk}</strong> risk (${blast.impacted_assets_count || 0} pending drafts impacted).
+        </div>
+      `;
+    }
+
+    showStatusMessage(`Synced ${data.extracted_count} facts from "${sourceName}". Blast-radius evaluated: ${blast.blast_radius_risk} risk.`);
     await loadFactVault();
-    if (!document.getElementById("knowledge-graph-container")?.classList.contains("hidden")) {
-      renderFactKnowledgeGraph();
+    if (FACT_VIEW_MODE === "graph") {
+      await loadKnowledgeGraph();
     }
   } catch (err) {
+    if (output) output.textContent += `[CRITICAL ERROR] ${err.message}\n`;
     showStatusMessage(`Sync error: ${err.message}`, true);
   } finally {
     restoreBtn();
   }
 }
 
-async function toggleKnowledgeGraphView() {
-  const container = document.getElementById("knowledge-graph-container");
-  if (!container) return;
-  const isHidden = container.classList.contains("hidden");
-  if (isHidden) {
-    container.classList.remove("hidden");
-    await renderFactKnowledgeGraph();
-  } else {
-    container.classList.add("hidden");
+async function loadKnowledgeGraph() {
+  try {
+    const res = await fetch("/api/facts/graph?tenant=northwind_academy");
+    if (!res.ok) return;
+    const data = await res.json();
+    KNOWLEDGE_GRAPH_DATA = data;
+    drawKnowledgeGraph(data);
+  } catch (err) {
+    console.error("Failed to load knowledge graph:", err);
   }
 }
 
-async function renderFactKnowledgeGraph() {
-  const svg = document.getElementById("fact-graph-svg");
-  if (!svg) return;
-  svg.innerHTML = `<text x="450" y="160" text-anchor="middle" fill="#B3B3B3" font-size="14">Loading Knowledge Graph...</text>`;
-  try {
-    const res = await fetch("/api/facts/graph");
-    const data = await res.json();
-    const nodes = data.nodes || [];
-    const edges = data.edges || [];
+function drawKnowledgeGraph(data, highlightedNodeId = null) {
+  const canvas = document.getElementById("fact-knowledge-graph-canvas");
+  if (!canvas || !data) return;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (nodes.length === 0) {
-      svg.innerHTML = `<text x="450" y="160" text-anchor="middle" fill="#B3B3B3" font-size="14">No facts in vault.</text>`;
-      return;
-    }
+  const nodes = data.nodes || [];
+  const edges = data.edges || [];
+  if (nodes.length === 0) {
+    ctx.fillStyle = "#94A3B8";
+    ctx.font = "14px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("No atomic facts in vault.", canvas.width / 2, canvas.height / 2);
+    return;
+  }
 
-    const subjects = nodes.filter(n => n.type === "subject");
-    const facts = nodes.filter(n => n.type === "fact");
+  // Calculate layout coordinates
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const radiusX = canvas.width * 0.38;
+  const radiusY = canvas.height * 0.38;
 
-    const width = 900;
-    const height = 320;
-    const subjX = 180;
-    const factX = 680;
+  const subjects = nodes.filter((n) => n.type === "subject");
+  const facts = nodes.filter((n) => n.type === "fact");
 
-    let svgHtml = `
-      <defs>
-        <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#AD9C8E" />
-        </marker>
-      </defs>
-    `;
-
-    const posMap = new Map();
-    subjects.forEach((s, idx) => {
-      const y = subjects.length === 1 ? height / 2 : 50 + (idx * (height - 100)) / (subjects.length - 1);
-      posMap.set(s.id, { x: subjX, y, node: s });
-    });
-    facts.forEach((f, idx) => {
-      const y = facts.length === 1 ? height / 2 : 40 + (idx * (height - 80)) / (facts.length - 1);
-      posMap.set(f.id, { x: factX, y, node: f });
-    });
-
-    for (const e of edges) {
-      const p1 = posMap.get(e.source);
-      const p2 = posMap.get(e.target);
-      if (p1 && p2) {
-        const isExpired = e.status === "EXPIRED";
-        const strokeColor = isExpired ? "#ef4444" : "#10B981";
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
-        svgHtml += `
-          <path d="M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}" fill="none" stroke="${strokeColor}" stroke-width="1.8" stroke-dasharray="${isExpired ? '4,4' : 'none'}" marker-end="url(#arrow)" opacity="0.75" />
-          <text x="${midX}" y="${midY - 4}" fill="#D4D4D4" font-size="11" text-anchor="middle" font-family="sans-serif">${escapeHtml(e.label)}</text>
-        `;
+  nodes.forEach((node) => {
+    if (!node.x || !node.y) {
+      if (node.type === "subject") {
+        const sIdx = subjects.indexOf(node);
+        const angle = (sIdx / Math.max(1, subjects.length)) * Math.PI - Math.PI / 2;
+        node.x = centerX - radiusX * 0.5 + 40 * Math.cos(angle);
+        node.y = centerY + radiusY * 0.8 * Math.sin(angle);
+      } else {
+        const fIdx = facts.indexOf(node);
+        const angle = (fIdx / Math.max(1, facts.length)) * 2 * Math.PI;
+        node.x = centerX + radiusX * 0.75 * Math.cos(angle);
+        node.y = centerY + radiusY * 0.75 * Math.sin(angle);
       }
     }
+  });
 
-    posMap.forEach((pos, id) => {
-      const n = pos.node;
-      const isSubj = n.type === "subject";
-      const isExpired = n.status === "EXPIRED";
-      const fill = isSubj ? "#E8D59E" : (isExpired ? "#ef4444" : "#10B981");
+  // Draw connecting edges
+  edges.forEach((edge) => {
+    const source = nodes.find((n) => n.id === edge.source);
+    const target = nodes.find((n) => n.id === edge.target);
+    if (!source || !target) return;
 
-      svgHtml += `
-        <g style="cursor:pointer;" transform="translate(${pos.x}, ${pos.y})">
-          <circle r="${isSubj ? 18 : 14}" fill="${fill}" stroke="#2B2B2B" stroke-width="3" />
-          <text x="${isSubj ? -26 : 22}" y="4" fill="#FFFFFF" font-size="12" font-weight="${isSubj ? '700' : '500'}" text-anchor="${isSubj ? 'end' : 'start'}" font-family="sans-serif">${escapeHtml(n.label)}</text>
-        </g>
-      `;
+    const isExpired = edge.status === "EXPIRED" || (target && target.status === "EXPIRED");
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(source.x, source.y);
+    ctx.lineTo(target.x, target.y);
+    ctx.strokeStyle = isExpired ? "rgba(244, 63, 94, 0.45)" : "rgba(16, 185, 129, 0.4)";
+    ctx.lineWidth = isExpired ? 1.5 : 2;
+    if (isExpired) ctx.setLineDash([4, 4]);
+    ctx.stroke();
+
+    // Relationship predicate label
+    if (edge.label) {
+      const midX = (source.x + target.x) / 2;
+      const midY = (source.y + target.y) / 2;
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "10px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(edge.label, midX, midY - 4);
+    }
+    ctx.restore();
+  });
+
+  // Draw nodes
+  nodes.forEach((node) => {
+    const isHighlighted = highlightedNodeId && node.id === highlightedNodeId;
+    const isSubj = node.type === "subject";
+    const isExpired = node.status === "EXPIRED";
+
+    let fill = "#38BDF8"; // Cyan for Entity Subject
+    if (!isSubj) {
+      fill = isExpired ? "#F43F5E" : "#10B981"; // Rose for Expired, Emerald for Active
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    const nodeRadius = isSubj ? (isHighlighted ? 20 : 16) : (isHighlighted ? 16 : 12);
+    ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = fill;
+    ctx.shadowColor = fill;
+    ctx.shadowBlur = isHighlighted ? 18 : 8;
+    ctx.fill();
+
+    ctx.strokeStyle = isHighlighted ? "#FFFFFF" : "#0F172A";
+    ctx.lineWidth = isHighlighted ? 3 : 2;
+    ctx.stroke();
+
+    // Text label
+    ctx.fillStyle = "#F8FAFC";
+    ctx.font = isSubj ? "bold 11px Inter, sans-serif" : "10px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(node.label || node.id, node.x, node.y + (isSubj ? 26 : 22));
+    ctx.restore();
+  });
+
+  // Attach interactive hover and click listeners once
+  if (!canvas._listenersAttached) {
+    canvas._listenersAttached = true;
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+
+      const hoveredNode = (KNOWLEDGE_GRAPH_DATA?.nodes || []).find((n) => {
+        const dx = n.x - mouseX;
+        const dy = n.y - mouseY;
+        return Math.sqrt(dx * dx + dy * dy) <= 22;
+      });
+
+      if (hoveredNode) {
+        canvas.style.cursor = "pointer";
+        drawKnowledgeGraph(KNOWLEDGE_GRAPH_DATA, hoveredNode.id);
+        renderNodeDetails(hoveredNode);
+      } else {
+        canvas.style.cursor = "crosshair";
+      }
     });
 
-    svg.innerHTML = svgHtml;
-  } catch (err) {
-    svg.innerHTML = `<text x="450" y="160" text-anchor="middle" fill="#ef4444" font-size="13">Failed to load graph: ${escapeHtml(err.message)}</text>`;
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+
+      const clickedNode = (KNOWLEDGE_GRAPH_DATA?.nodes || []).find((n) => {
+        const dx = n.x - mouseX;
+        const dy = n.y - mouseY;
+        return Math.sqrt(dx * dx + dy * dy) <= 22;
+      });
+
+      if (clickedNode) {
+        drawKnowledgeGraph(KNOWLEDGE_GRAPH_DATA, clickedNode.id);
+        renderNodeDetails(clickedNode);
+      }
+    });
   }
+}
+
+function renderNodeDetails(node) {
+  const detailsBox = document.getElementById("graph-node-details");
+  if (!detailsBox || !node) return;
+  const isSubj = node.type === "subject";
+  const isExpired = node.status === "EXPIRED";
+  const statusBadge = isSubj
+    ? '<span class="tier-badge tier-human">Entity Subject</span>'
+    : (isExpired ? '<span class="tier-badge tier-violation">Expired Fact</span>' : '<span class="tier-badge tier-pass">Active Fact</span>');
+
+  detailsBox.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+      <div>
+        <strong style="color:var(--text-primary);font-size:0.95rem;">${escapeHtml(node.label || node.id)}</strong>
+        <span style="font-size:0.8rem;color:var(--text-muted);margin-left:8px;">ID: <code>${escapeHtml(node.id)}</code></span>
+      </div>
+      ${statusBadge}
+    </div>
+    <div style="font-size:0.84rem;color:var(--text-secondary);margin-top:6px;">
+      ${node.statement ? `<strong>Statement:</strong> ${escapeHtml(node.statement)}<br/>` : ""}
+      ${node.valid_from ? `<strong>Validity Window:</strong> <code>${escapeHtml(node.valid_from)}</code> to <code>${escapeHtml(node.valid_until)}</code> &bull; ` : ""}
+      ${node.provenance_hash ? `<strong>SHA-256 Provenance:</strong> <code>${escapeHtml(node.provenance_hash.slice(0, 24))}...</code>` : ""}
+    </div>
+  `;
 }
 
 

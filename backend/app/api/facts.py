@@ -6,7 +6,7 @@ from backend.app.config import DEFAULT_REVIEW_DATE
 from backend.app.models import get_db, FactModel, append_audit_event
 from backend.app.schemas.fact import FactCreateSchema, KnowledgeSyncRequestSchema
 from backend.app.seed import get_facts_as_dicts
-from backend.app.engine.knowledge_sync import EnterpriseKnowledgeSyncEngine
+from backend.app.engine.knowledge_sync import EnterpriseKnowledgeSyncEngine, parse_iso_date_safely
 
 router = APIRouter(prefix="/api/facts", tags=["Fact Vault"])
 
@@ -121,7 +121,8 @@ def toggle_fact_status(
         db.commit()
 
     # Reference review date is 2026-10-15; expiring sets valid_until to 2026-06-30, activating sets 2027-12-31
-    if fact.valid_until < DEFAULT_REVIEW_DATE.isoformat():
+    vu_parsed = parse_iso_date_safely(fact.valid_until, fallback=DEFAULT_REVIEW_DATE)
+    if vu_parsed < DEFAULT_REVIEW_DATE:
         fact.valid_until = "2027-12-31"
         new_state = "ACTIVE"
     else:

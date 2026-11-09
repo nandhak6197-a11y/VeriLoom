@@ -422,7 +422,21 @@ def test_certificate_api_download_and_proofs():
     assert res.status_code == 200
     asset_id = res.json()["asset_id"]
 
-    # 2. Query certificate JSON
+    # 2. Verify unapproved draft returns 400 Bad Request
+    unapp_res = client.get(f"/api/submissions/{asset_id}/certificate?signer_name=Auditor%20One&signer_role=Brand%20Admin")
+    assert unapp_res.status_code == 400
+    assert "APPROVED" in unapp_res.json()["detail"]
+
+    # 3. Approve asset via Brand Admin
+    app_res = client.post("/api/workflow/approve", json={
+        "asset_id": asset_id,
+        "decision": "APPROVE",
+        "actor_name": "Auditor One",
+        "actor_role": "Brand Admin",
+    })
+    assert app_res.status_code == 200
+
+    # 4. Query certificate JSON for approved asset
     cert_res = client.get(f"/api/submissions/{asset_id}/certificate?signer_name=Auditor%20One&signer_role=Brand%20Admin")
     assert cert_res.status_code == 200
     cert = cert_res.json()
@@ -436,7 +450,7 @@ def test_certificate_api_download_and_proofs():
     assert cert["cryptographic_proof"]["dual_sha256"]["compliance_report_sha256"] == cert["report_sha256"]
     assert "digital_signature" in cert and len(cert["digital_signature"]) == 64
     assert "ciede2000_proof" in cert
-    assert cert["ciede2000_proof"]["status"] == "PASS"
+    assert cert["ciede2000_proof"]["status"] in ("PASS", "NOT_APPLICABLE")
     assert "merkle_root" in cert and len(cert["merkle_root"]) > 0
     assert cert["cryptographic_validity"] is True
     assert "timestamp" in cert

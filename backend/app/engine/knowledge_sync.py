@@ -23,6 +23,60 @@ def compute_sha256_text(text: Any) -> str:
     return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
 
 
+def parse_iso_date_safely(date_val: Any, fallback: Optional[date] = None) -> Optional[date]:
+    """
+    Standardizes and parses varied date representations into a valid datetime.date object.
+    Robustly handles:
+    - Non-zero-padded months and days (e.g. '2026-9-1' -> 2026-09-01)
+    - Slash/dot separators ('2026/09/01', '2026.9.1')
+    - Timestamp strings containing 'T' or timezone offsets
+    - Invalid or null inputs ('None', 'null', '', None) returning the provided fallback.
+    Prevents erroneous ASCII string sorting when determining temporal validity.
+    """
+    if date_val is None:
+        return fallback
+    if isinstance(date_val, date) and not isinstance(date_val, datetime):
+        return date_val
+    if isinstance(date_val, datetime):
+        return date_val.date()
+
+    val_str = str(date_val).strip()
+    if not val_str or val_str.lower() in ("none", "null", "undefined", "n/a", "nat"):
+        return fallback
+
+    # Strip time portion if present (e.g. 2026-10-15T12:00:00Z)
+    val_str = val_str.split("T")[0].split(" ")[0].strip()
+
+    # Pattern 1: YYYY-M-D or YYYY/M/D or YYYY.M.D
+    m = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$", val_str)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return fallback
+
+    # Pattern 2: D-M-YYYY or M/D/YYYY
+    m = re.match(r"^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$", val_str)
+    if m:
+        try:
+            p1, p2, yr = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            if p1 > 12:  # Day first: DD/MM/YYYY
+                return date(yr, p2, p1)
+            else:  # MM/DD/YYYY or DD/MM/YYYY
+                return date(yr, p1, p2)
+        except ValueError:
+            return fallback
+
+    # Fallback to standard strptime attempts
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y", "%b %d, %Y"):
+        try:
+            return datetime.strptime(val_str, fmt).date()
+        except ValueError:
+            continue
+
+    return fallback
+
+
 class EnterpriseKnowledgeSyncEngine:
     """
     Ingests unstructured corporate docs, extracts verified atomic facts,
@@ -124,6 +178,11 @@ class EnterpriseKnowledgeSyncEngine:
                             stmt = str(norm_item.get("statement", f"{s_name} {p_val} {m_val}")).strip()
                             item_valid_from = str(norm_item.get("valid_from", valid_from)).strip()
                             item_valid_until = str(norm_item.get("valid_until", valid_until)).strip()
+                            parsed_vf = parse_iso_date_safely(item_valid_from, fallback=today)
+                            parsed_vu = parse_iso_date_safely(item_valid_until, fallback=today + timedelta(days=default_valid_days))
+                            norm_vf = parsed_vf.isoformat() if parsed_vf else valid_from
+                            norm_vu = parsed_vu.isoformat() if parsed_vu else valid_until
+                            item_status = "ACTIVE" if (parsed_vu and parsed_vu >= today) else "EXPIRED"
                             dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
                             if dedup not in seen_keys:
                                 seen_keys.add(dedup)
@@ -141,9 +200,9 @@ class EnterpriseKnowledgeSyncEngine:
                                     "source": f"{source_type}:{source_name}",
                                     "source_sha256": source_sha256,
                                     "provenance_hash": source_sha256,
-                                    "valid_from": item_valid_from,
-                                    "valid_until": item_valid_until,
-                                    "status": "ACTIVE" if item_valid_until >= ref_date else "EXPIRED",
+                                    "valid_from": norm_vf,
+                                    "valid_until": norm_vu,
+                                    "status": item_status,
                                 })
                 if extracted_facts:
                     return extracted_facts
@@ -169,6 +228,11 @@ class EnterpriseKnowledgeSyncEngine:
                         stmt = low_row.get("statement", f"{s_name} {p_val} {m_val}")
                         item_valid_from = low_row.get("valid_from", valid_from)
                         item_valid_until = low_row.get("valid_until", valid_until)
+                        parsed_vf = parse_iso_date_safely(item_valid_from, fallback=today)
+                        parsed_vu = parse_iso_date_safely(item_valid_until, fallback=today + timedelta(days=default_valid_days))
+                        norm_vf = parsed_vf.isoformat() if parsed_vf else valid_from
+                        norm_vu = parsed_vu.isoformat() if parsed_vu else valid_until
+                        item_status = "ACTIVE" if (parsed_vu and parsed_vu >= today) else "EXPIRED"
                         dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
                         if dedup not in seen_keys:
                             seen_keys.add(dedup)
@@ -186,9 +250,9 @@ class EnterpriseKnowledgeSyncEngine:
                                 "source": f"{source_type}:{source_name}",
                                 "source_sha256": source_sha256,
                                 "provenance_hash": source_sha256,
-                                "valid_from": item_valid_from,
-                                "valid_until": item_valid_until,
-                                "status": "ACTIVE" if item_valid_until >= ref_date else "EXPIRED",
+                                "valid_from": norm_vf,
+                                "valid_until": norm_vu,
+                                "status": item_status,
                             })
                 if extracted_facts:
                     return extracted_facts
@@ -219,6 +283,11 @@ class EnterpriseKnowledgeSyncEngine:
                                 stmt = cells[st_idx] if st_idx != -1 and len(cells) > st_idx and cells[st_idx] else f"{s_name} {p_val} {m_val}"
                                 item_valid_from = cells[vf_idx] if vf_idx != -1 and len(cells) > vf_idx and cells[vf_idx] else valid_from
                                 item_valid_until = cells[vu_idx] if vu_idx != -1 and len(cells) > vu_idx and cells[vu_idx] else valid_until
+                                parsed_vf = parse_iso_date_safely(item_valid_from, fallback=today)
+                                parsed_vu = parse_iso_date_safely(item_valid_until, fallback=today + timedelta(days=default_valid_days))
+                                norm_vf = parsed_vf.isoformat() if parsed_vf else valid_from
+                                norm_vu = parsed_vu.isoformat() if parsed_vu else valid_until
+                                item_status = "ACTIVE" if (parsed_vu and parsed_vu >= today) else "EXPIRED"
                                 dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
                                 if dedup not in seen_keys:
                                     seen_keys.add(dedup)
@@ -236,9 +305,9 @@ class EnterpriseKnowledgeSyncEngine:
                                         "source": f"{source_type}:{source_name}",
                                         "source_sha256": source_sha256,
                                         "provenance_hash": source_sha256,
-                                        "valid_from": item_valid_from,
-                                        "valid_until": item_valid_until,
-                                        "status": "ACTIVE" if item_valid_until >= ref_date else "EXPIRED",
+                                        "valid_from": norm_vf,
+                                        "valid_until": norm_vu,
+                                        "status": item_status,
                                     })
                         if extracted_facts:
                             return extracted_facts
@@ -268,17 +337,21 @@ class EnterpriseKnowledgeSyncEngine:
                     fact_id = f"F-SYNC-{hashlib.md5(dedup_key.encode()).hexdigest()[:6].upper()}"
 
                     # Explicit valid_from and valid_until in clause, falling back to document-level
-                    vf_match = re.search(r"(?:valid|effective)\s+from\s+(\d{4}-\d{2}-\d{2})", clause_clean, re.IGNORECASE)
+                    vf_match = re.search(r"(?:valid|effective)\s+from\s+([0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2})", clause_clean, re.IGNORECASE)
                     if not vf_match:
-                        vf_match = re.search(r"(?:valid|effective)\s+from\s+(\d{4}-\d{2}-\d{2})", doc_str, re.IGNORECASE)
+                        vf_match = re.search(r"(?:valid|effective)\s+from\s+([0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2})", doc_str, re.IGNORECASE)
                     actual_valid_from = vf_match.group(1) if vf_match else valid_from
 
-                    exp_match = re.search(r"(?:valid\s+(?:until|through|to)|expires?\s*(?:on|at)?|expiration:?)\s*(\d{4}-\d{2}-\d{2})", clause_clean, re.IGNORECASE)
+                    exp_match = re.search(r"(?:valid\s+(?:until|through|to)|expires?\s*(?:on|at)?|expiration:?)\s*([0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2})", clause_clean, re.IGNORECASE)
                     if not exp_match:
-                        exp_match = re.search(r"(?:valid\s+(?:until|through|to)|expires?\s*(?:on|at)?|expiration:?)\s*(\d{4}-\d{2}-\d{2})", doc_str, re.IGNORECASE)
+                        exp_match = re.search(r"(?:valid\s+(?:until|through|to)|expires?\s*(?:on|at)?|expiration:?)\s*([0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2})", doc_str, re.IGNORECASE)
                     actual_valid_until = exp_match.group(1) if exp_match else valid_until
 
-                    status = "ACTIVE" if actual_valid_until >= ref_date else "EXPIRED"
+                    parsed_vf = parse_iso_date_safely(actual_valid_from, fallback=today)
+                    parsed_vu = parse_iso_date_safely(actual_valid_until, fallback=today + timedelta(days=default_valid_days))
+                    norm_vf = parsed_vf.isoformat() if parsed_vf else valid_from
+                    norm_vu = parsed_vu.isoformat() if parsed_vu else valid_until
+                    status = "ACTIVE" if (parsed_vu and parsed_vu >= today) else "EXPIRED"
 
                     extracted_facts.append({
                         "fact_id": fact_id,
@@ -293,8 +366,8 @@ class EnterpriseKnowledgeSyncEngine:
                         "source": f"{source_type}:{source_name}",
                         "source_sha256": source_sha256,
                         "provenance_hash": source_sha256,
-                        "valid_from": actual_valid_from,
-                        "valid_until": actual_valid_until,
+                        "valid_from": norm_vf,
+                        "valid_until": norm_vu,
                         "status": status,
                     })
 

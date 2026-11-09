@@ -53,13 +53,14 @@
             </button>
           </div>
 
-          <div class="top-control-pill" title="Active Regulatory Regime & Statutory Checks">
-            <label for="active-jurisdiction-select">Region</label>
-            <select id="active-jurisdiction-select" aria-label="Select regulatory jurisdiction" onchange="onGlobalJurisdictionChanged(this.value)">
-              <option value="US">🇺🇸 US (FTC)</option>
-              <option value="EU">🇪🇺 EU (AI Act)</option>
-              <option value="UK">🇬🇧 UK (CMA/ASA)</option>
-              <option value="GLOBAL">🌐 Global</option>
+          <!-- Top-Nav Regulatory Jurisdiction Switcher (§Improvement 2) -->
+          <div class="top-control-pill jurisdiction-pill" title="Regulatory Jurisdiction Matrix (Dynamic Rule & Disclosure Re-compilation)">
+            <label for="active-jurisdiction-select">Jurisdiction</label>
+            <select id="active-jurisdiction-select" aria-label="Select regulatory jurisdiction" onchange="onJurisdictionChanged()">
+              <option value="US">🇺🇸 US (FTC 16 CFR §255)</option>
+              <option value="EU">🇪🇺 EU (AI Act Art. 50 / EAA)</option>
+              <option value="UK">🇬🇧 UK (CMA &amp; CAP Code)</option>
+              <option value="GLOBAL">🌐 Global (Harmonized)</option>
             </select>
           </div>
 
@@ -243,6 +244,49 @@
                 </div>
               </div>
 
+              <!-- Step 2: 1-Click Compliant Legal Disclosure Card (§Improvement 2) -->
+              <div id="legal-disclosure-card" class="disclosure-card hidden">
+                <div class="disclosure-header">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="tier-badge tier-violation" id="disclosure-badge">MANDATORY DISCLOSURE</span>
+                    <strong id="disclosure-rule-title" style="color: var(--text-primary); font-size: 0.98rem;">
+                      Missing Mandatory Legal Disclosure (§Jurisdiction Matrix)
+                    </strong>
+                  </div>
+                  <span id="disclosure-channel-badge" class="tier-badge tier-advisory">Social Media (Max 280 chars)</span>
+                </div>
+
+                <p id="disclosure-explanation" style="font-size: 0.88rem; color: var(--text-secondary); margin: 8px 0;">
+                  Content lacks mandatory statutory disclosure under the active jurisdiction rule engine.
+                </p>
+
+                <div class="disclosure-preview-box">
+                  <span style="display: block; font-size: 0.76rem; color: var(--text-muted); margin-bottom: 4px;">
+                    Synthesized Non-Destructive Compliant Footnote:
+                  </span>
+                  <code id="disclosure-text-preview"></code>
+                </div>
+
+                <!-- Real-Time Channel Character-Count Gauge -->
+                <div class="char-count-container">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px;">
+                    <span style="color: var(--text-secondary);">Working Copy Character Limit Tracker:</span>
+                    <strong id="disclosure-char-count-label" style="color: #34D399;">0 / 280 chars</strong>
+                  </div>
+                  <div class="char-meter-track">
+                    <div id="disclosure-char-meter-fill" class="char-meter-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 8px;">
+                  <button type="button" id="btn-inject-disclosure" class="btn btn-emerald-glowing" onclick="injectCompliantDisclosure(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    1-Click Append Compliant Disclosure
+                  </button>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">Non-destructive: Headline copy remains untouched</span>
+                </div>
+              </div>
+
               <!-- Step 2B: Cited Findings & Surgical Tracked-Change Suggestions -->
               <div class="section-divider-label">
                 <span>Cited Findings &amp; Surgical Tracked-Change Suggestions</span>
@@ -262,6 +306,11 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     Approve Submission
                   </button>
+                  <!-- 1-Click Verification Certificate Download Button (§Improvement 3) -->
+                  <button type="button" id="btn-download-certificate" class="btn btn-cta-cert hidden" onclick="downloadVerificationCertificate(this)" title="Download Cryptographically Signed Compliance Proof Certificate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    Download Verification Certificate
+                  </button>
                   <button type="button" id="btn-decision-ESCALATE" class="btn btn-ghost btn-sm" onclick="submitAssetDecision('ESCALATE', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     Escalate to Legal
@@ -270,7 +319,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     Reject
                   </button>
-                  <button type="button" id="btn-download-cert" class="btn btn-outline btn-sm" onclick="downloadComplianceCertificate(this)" title="Download Cryptographically Signed Compliance Proof Certificate">
+                  <button type="button" id="btn-download-cert" class="btn btn-outline btn-sm hidden" onclick="downloadComplianceCertificate(this)" title="Download Cryptographically Signed Compliance Proof Certificate">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     📜 Audit Certificate
                   </button>
@@ -329,6 +378,10 @@
               </span>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <button type="button" id="btn-toggle-safezone-overlay" class="btn btn-emerald-glowing btn-sm" onclick="toggleLogoSafeZoneOverlay()">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                Toggle Logo Safe-Zone (0.5x Margin)
+              </button>
               <button type="button" class="btn btn-danger btn-sm" onclick="runVisualAuditDemo('non_compliant_demo', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                 Load Non-Compliant Banner
@@ -348,9 +401,9 @@
           <div class="workbench-grid" style="grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));">
             <div style="background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px;">
               <h3 style="margin-top: 0; font-size: 1.04rem; margin-bottom: 12px;" id="visual-banner-title">1. Banner Canvas &amp; OCR Bounding Boxes</h3>
-              <canvas id="visual-inspector-canvas" width="600" height="260" style="width: 100%; max-width: 600px; border: 1px solid var(--border-card); border-radius: 10px; background: #222222; box-shadow: var(--shadow-sm);"></canvas>
+              <canvas id="visual-inspector-canvas" width="600" height="260" style="width: 100%; max-width: 600px; border: 1px solid var(--border-card); border-radius: 10px; background: #070B14; box-shadow: var(--shadow-sm);"></canvas>
               <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 10px;">
-                Solid green box = WCAG 2.1 AA Pass (&ge; 4.5:1) &bull; Dashed red box = WCAG 2.1 AA Fail (&lt; 4.5:1) &bull; <strong style="color: var(--accent-cream);">Hover any OCR row on the right to highlight its box on the canvas.</strong>
+                Solid cyan box = Brand Logo &bull; Dashed emerald/rose perimeter = 0.5x height Safe-Zone boundary &bull; Green box = WCAG 2.1 Pass (&ge; 4.5:1) &bull; <strong style="color: var(--accent-emerald-light);">Hover any OCR row on the right to highlight.</strong>
               </div>
             </div>
 
@@ -434,78 +487,113 @@
           <div class="panel-header">
             <div>
               <h2>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-                Time-Bounded Fact Vault
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                Time-Bounded Fact Vault &amp; Enterprise Truth Engine
               </h2>
               <span style="font-size: 0.88rem; color: var(--text-muted); display: block; margin-top: 4px;">
-                Quantified claims are verified against approved facts within <code>[valid_from, valid_until]</code> and checked for modality inflation.
+                Truth relations verified against approved facts within <code>[valid_from, valid_until]</code> with automated Confluence/Notion ingestion.
               </span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <span class="tier-badge tier-pass">Review Date: 2026-11-05</span>
-              <button type="button" id="btn-toggle-knowledge-graph" class="btn btn-outline btn-sm" onclick="toggleKnowledgeGraphView()">
-                🕸️ Fact Graph
+              <!-- View Toggle: Table vs Interactive Knowledge Graph -->
+              <div class="mode-toggle-group" role="group" aria-label="Fact Vault View Mode">
+                <button type="button" id="fact-view-table-btn" class="mode-toggle-btn active" onclick="setFactViewMode('table')">
+                  Table View
+                </button>
+                <button type="button" id="fact-view-graph-btn" class="mode-toggle-btn" onclick="setFactViewMode('graph')">
+                  Knowledge Graph
+                </button>
+              </div>
+              <button type="button" id="btn-sync-hud-toggle" class="btn btn-emerald-glowing btn-sm" onclick="toggleKnowledgeSyncHud()">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                ⚡ Live Sync Enterprise Knowledge
               </button>
-              <button type="button" id="btn-toggle-sync-drawer" class="btn btn-outline btn-sm" onclick="toggleEnterpriseSyncDrawer()">
-                🔄 Sync Enterprise Docs
-              </button>
-              <button type="button" id="btn-toggle-add-fact" class="btn btn-primary btn-sm" onclick="toggleAddFactDrawer()">
+              <button type="button" id="btn-toggle-add-fact" class="btn btn-outline btn-sm" onclick="toggleAddFactDrawer()">
                 + Add Approved Fact
               </button>
             </div>
           </div>
 
-          <!-- Improvement 1: Collapsible Enterprise Knowledge Sync HUD -->
-          <div id="enterprise-sync-drawer" class="hidden" style="background: var(--bg-input); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <!-- Live Sync Enterprise Knowledge HUD (Expandable Drawer §Improvement 1) -->
+          <div id="knowledge-sync-hud" class="knowledge-sync-hud hidden">
+            <div class="sync-hud-header">
               <div>
-                <strong style="color: var(--accent-cream); font-size: 1rem;">Enterprise Truth Sync &amp; Blast-Radius Engine (§Round 3 Improvement 1)</strong>
-                <span style="display: block; font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
-                  Ingests enterprise Confluence / Notion / Jira memos, extracts verified atomic facts with SHA-256 provenance hashes, and recalculates queue blast radius.
-                </span>
+                <strong style="color: var(--accent-emerald-light); font-size: 1.05rem;">
+                  Enterprise Fact-Graph &amp; Automated Truth Sync Engine (§Improvement 1)
+                </strong>
+                <div style="font-size: 0.84rem; color: var(--text-secondary); margin-top: 3px;">
+                  Ingest offline Markdown, Notion/Confluence page exports, and structured JSON feeds. Isolates subject-predicate-metric tuples with SHA-256 provenance hashes and calculates queue blast-radius.
+                </div>
               </div>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEnterpriseSyncDrawer()">Close</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="toggleKnowledgeSyncHud()">&times; Close HUD</button>
             </div>
-            <div class="form-row" style="grid-template-columns: 1fr 1fr auto; align-items: end; margin-bottom: 12px;">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="sync-source-name">Enterprise Document Title</label>
-                <input type="text" id="sync-source-name" class="form-control" value="Q4 2026 Enterprise Release Memo" />
+
+            <div class="sync-hud-body">
+              <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: end; margin-bottom: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="sync-source-name">Document Title</label>
+                  <input type="text" id="sync-source-name" class="form-control" value="Q4 2026 Enterprise Truth Memo" />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="sync-source-type">Source Platform Feed</label>
+                  <select id="sync-source-type" class="form-control" onchange="onSyncSourceChanged()">
+                    <option value="confluence">Confluence Page Export (Markdown)</option>
+                    <option value="notion">Notion Curriculum Specification Feed</option>
+                    <option value="jira">Jira Outcomes Audit Report</option>
+                    <option value="json_feed">Offline JSON/CSV Enterprise Feed</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="sync-scenario-preset">Load Test Enterprise Feed</label>
+                  <select id="sync-scenario-preset" class="form-control" onchange="applySyncScenarioPreset()">
+                    <option value="">-- Choose enterprise truth update --</option>
+                    <option value="q3_pricing">Q3 2026 Curriculum Pricing &amp; Completion Rates</option>
+                    <option value="accreditation_soc2">SOC2 Type II &amp; ISO-27001 Security Specifications</option>
+                    <option value="sla_guarantee">99.95% Enterprise SLA &amp; Support Matrix</option>
+                  </select>
+                </div>
+                <button type="button" id="btn-execute-sync" class="btn btn-primary" onclick="executeEnterpriseKnowledgeSync(this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Run Truth Extraction &amp; Blast Radius
+                </button>
               </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label for="sync-source-type">Source Platform Feed</label>
-                <select id="sync-source-type" class="form-control" onchange="loadPresetEnterpriseDoc(this.value)">
-                  <option value="confluence">Atlassian Confluence Release Page</option>
-                  <option value="notion">Notion Curriculum Specification Feed</option>
-                  <option value="jira">Jira Outcomes Audit Report</option>
-                </select>
-              </div>
-              <button type="button" id="btn-run-knowledge-sync" class="btn btn-primary" onclick="executeEnterpriseKnowledgeSync(this)">
-                🔄 Sync Truth &amp; Recalculate Blast-Radius
-              </button>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label for="sync-document-text">Raw Unstructured Enterprise Documentation Text</label>
-              <textarea id="sync-document-text" class="form-control" rows="4" style="font-family: monospace; font-size: 0.85rem;">Northwind Academy offers a 30% discount for all enterprise partners in Q4 2026.
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="sync-doc-content">Enterprise Documentation Raw Payload</label>
+                <textarea id="sync-doc-content" class="form-control" style="min-height: 100px; font-family: var(--font-mono); font-size: 0.84rem;" placeholder="Paste raw documentation text or markdown...">Northwind Academy offers a 30% discount for all enterprise partners in Q4 2026.
 Data Foundations takes 16 weeks to complete.
 AWS Cohort achieved a 94% job placement rate according to the internal auditor.
 Cohort size is capped at 30 students per session.</textarea>
+              </div>
+
+              <!-- Streaming Terminal HUD for Extraction Logs & Blast Radius -->
+              <div id="sync-hud-terminal" class="sync-terminal-box hidden">
+                <div class="terminal-bar">
+                  <span>⚡ Enterprise Truth Sync Stream — Extraction &amp; Blast Radius Telemetry</span>
+                  <span id="sync-terminal-status" class="tier-badge tier-pass">STREAM READY</span>
+                </div>
+                <pre id="sync-terminal-output" class="terminal-output"></pre>
+              </div>
             </div>
-            <div id="sync-blast-radius-box"></div>
           </div>
 
-          <!-- Improvement 1: Interactive Knowledge Graph Visualizer -->
-          <div id="knowledge-graph-container" class="hidden" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 18px; margin-bottom: 18px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+          <!-- Interactive Knowledge Graph Container (§Improvement 1) -->
+          <div id="fact-graph-view-card" class="panel-card hidden" style="background: #070B14; border: 1px solid var(--border-card); padding: 18px; margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div>
-                <strong style="color: var(--accent-cream); font-size: 1rem;">Enterprise Fact-Graph Visualizer (Entities, Facts &amp; Validity States)</strong>
-                <span style="display:block; font-size: 0.82rem; color: var(--text-muted); margin-top:2px;">
-                  Visualizes relationship tuples: Emerald = Active Fact &bull; Rose = Expired Fact &bull; Gold = Entity Subject
-                </span>
+                <strong style="color: var(--accent-emerald-light); font-size: 1rem;">Enterprise Knowledge Graph Network</strong>
+                <span style="font-size: 0.82rem; color: var(--text-muted); margin-left: 8px;">Interactive node-link visualization of atomic facts, entities &amp; relationships</span>
               </div>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="toggleKnowledgeGraphView()">Hide Graph</button>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="legend-chip legend-emerald"><span class="dot"></span> Active Fact</span>
+                <span class="legend-chip legend-rose"><span class="dot"></span> Expired Fact</span>
+                <span class="legend-chip legend-cyan"><span class="dot"></span> Entity Subject</span>
+                <button type="button" class="btn btn-outline btn-sm" onclick="refreshKnowledgeGraph(this)">Reset Layout</button>
+              </div>
             </div>
-            <div id="fact-graph-canvas-wrap" style="width: 100%; height: 320px; background: #1c1c1c; border-radius: 8px; border: 1px solid var(--border-subtle); overflow: hidden; position: relative;">
-              <svg id="fact-graph-svg" width="100%" height="100%" viewBox="0 0 900 320" style="display:block;"></svg>
+            <canvas id="fact-knowledge-graph-canvas" width="1000" height="420" style="width: 100%; max-width: 1000px; height: auto; background: #050811; border: 1px solid var(--border-subtle); border-radius: 10px; cursor: crosshair;"></canvas>
+            <div id="graph-node-details" class="diff-box" style="margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary); background: #0B1120;">
+              <em>Hover or click any node in the knowledge graph to inspect its validity window and SHA-256 provenance hash.</em>
             </div>
           </div>
 

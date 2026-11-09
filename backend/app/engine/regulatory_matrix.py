@@ -17,6 +17,8 @@ from typing import List, Dict, Any, Optional
 
 # Channel character capacity limits
 CHANNEL_LIMITS = {
+    "sms": 160,
+    "push": 100,
     "social": 280,
     "ad": 150,
     "email": 2000,
@@ -366,6 +368,8 @@ def evaluate_regulatory_compliance(
     seen_rule_ids = set()
     channel_key = (channel or "social").lower()
     char_limit = CHANNEL_LIMITS.get(channel_key, 2000)
+    cumulative_disclosure_length = 0
+    base_length = len(text.strip())
 
     for jur_code in active_jurisdictions:
         profile = JURISDICTION_PROFILES.get(jur_code)
@@ -391,9 +395,14 @@ def evaluate_regulatory_compliance(
                     disc_texts.get("web", disc_texts.get("social", ""))
                 )
 
-                # Character capacity analysis
-                potential_char_length = len(text.strip()) + len(chosen_disclosure) + (2 if "\n" in chosen_disclosure or "\n" in text else 1)
-                fits_in_channel = potential_char_length <= char_limit
+                # Character capacity analysis (cumulative across co-occurring disclosures)
+                sep_len = 2 if ("\n" in chosen_disclosure or "\n" in text) else 1
+                disclosure_cost = len(chosen_disclosure) + sep_len
+                cumulative_char_length = base_length + cumulative_disclosure_length + disclosure_cost
+                fits_in_channel = cumulative_char_length <= char_limit
+
+                # Accumulate for subsequent co-occurring findings
+                cumulative_disclosure_length += disclosure_cost
 
                 suggested_fix = inject_disclosure_into_text(text, chosen_disclosure, placement="append")
 
@@ -418,7 +427,8 @@ def evaluate_regulatory_compliance(
                     "append_action": "APPEND_DISCLOSURE",
                     "channel": channel_key,
                     "channel_char_limit": char_limit,
-                    "projected_length": potential_char_length,
+                    "projected_length": cumulative_char_length,
+                    "cumulative_disclosure_length": cumulative_disclosure_length,
                     "fits_in_channel": fits_in_channel,
                     "suggested_fix": suggested_fix,
                     "tracked_change": f"{text.strip()} {{+{chosen_disclosure}+}}",
