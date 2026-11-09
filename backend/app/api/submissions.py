@@ -3,10 +3,10 @@
 import json
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, UploadFile, File, Form, Body, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, Body, HTTPException, Response
 from sqlalchemy.orm import Session
 from backend.app.config import DEFAULT_REVIEW_DATE
-from backend.app.models import get_db, AssetModel, FindingModel, append_audit_event
+from backend.app.models import get_db, AssetModel, FindingModel, AuditLogModel, append_audit_event
 from backend.app.schemas.schemas import (
     SubmissionCreateSchema,
     RegulatoryDisclosureApplySchema,
@@ -27,7 +27,10 @@ router = APIRouter(prefix="/api/submissions", tags=["Submissions & Verification"
 def _serialize_asset(asset: AssetModel, findings: list) -> dict:
     has_custom_edit = any(getattr(f, "creator_action", "") == "EDIT" for f in findings)
     has_disclosure_applied = any(getattr(f, "rule_id", "").startswith("REG-") and getattr(f, "creator_action", "") == "ACCEPT" for f in findings)
-    effective_current = asset.current_content if (has_custom_edit or has_disclosure_applied) else _recompute_cumulative_working_copy(asset, findings)
+    if has_custom_edit or has_disclosure_applied or (asset.current_content and asset.current_content != asset.normalized_content):
+        effective_current = asset.current_content
+    else:
+        effective_current = _recompute_cumulative_working_copy(asset, findings)
     return {
         "asset_id": asset.asset_id,
         "tenant": asset.tenant,
@@ -272,6 +275,7 @@ def create_submission(
         asset.must_keep_points_json = json.dumps(req.must_keep_points)
         asset.origin = req.origin
         asset.channel = req.channel
+        asset.jurisdiction = getattr(req, "jurisdiction", "US")
         asset.status = status_val
         asset.assigned_role = res["assigned_role"]
         asset.overall_verdict = res["overall_verdict"]
@@ -426,9 +430,9 @@ def run_visual_and_contrast_audit(payload: dict = Body(default={})):
         )
         audit_res["preview_data_url"] = custom_b64 if custom_b64.startswith("data:") else f"data:image/png;base64,{raw_b64}"
         audit_res["banner_label"] = f"Custom Uploaded Banner: {custom_name}"
-        img_w = audit_res.get("width") or audit_res.get("image_dimensions", {}).get("width", 1200)
-        img_h = audit_res.get("height") or audit_res.get("image_dimensions", {}).get("height", 630)
-        t_boxes = audit_res.get("text_boxes") or audit_res.get("text_contrast_measurements", [])
+        img_w = audit_res.get("width", 1200)
+        img_h = audit_res.get("height", 630)
+        t_boxes = audit_res.get("text_boxes", [])
         sz = audit_logo_safe_zone(
             image_width=img_w,
             image_height=img_h,
@@ -534,11 +538,13 @@ def get_submission_certificate(
     asset_id: str,
     signer_name: str = "Nandha K",
     signer_role: str = "Brand Admin",
+    download: bool = False,
     db: Session = Depends(get_db),
 ):
     """
     Improvement 3 (§Round 3): Generates a cryptographically signed Compliance Proof Certificate
     with Merkle block verification, dual SHA-256 hashes, CIEDE2000 proof, and WCAG contrast check.
+    Supports downloadable JSON certificate export.
     """
     asset = db.query(AssetModel).filter(AssetModel.asset_id == asset_id).first()
     if not asset:
@@ -561,13 +567,28 @@ def get_submission_certificate(
     receipt = asset_dict.get("receipt") or {}
     jur = getattr(asset, "jurisdiction", "US") or "US"
 
+    last_audit = (
+        db.query(AuditLogModel)
+        .filter(AuditLogModel.target_id == asset_id)
+        .order_by(AuditLogModel.id.desc())
+        .first()
+    )
+    block_id = last_audit.id if last_audit else receipt.get("audit_ledger_id", 1)
+    block_hash = last_audit.block_hash if last_audit else receipt.get("audit_block_hash", "")
+
     cert = generate_compliance_certificate(
         asset_dict=asset_dict,
         findings=findings_dicts,
         signer_name=signer_name,
         signer_role=signer_role,
         jurisdiction=jur,
-        ledger_block_id=receipt.get("audit_ledger_id", 1),
-        ledger_block_hash=receipt.get("audit_block_hash", ""),
+        ledger_block_id=block_id,
+        ledger_block_hash=block_hash,
     )
+    if download:
+        return Response(
+            content=json.dumps(cert, indent=2),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="certificate-{asset_id}.json"'},
+        )
     return cert

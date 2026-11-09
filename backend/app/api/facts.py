@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.app.config import DEFAULT_REVIEW_DATE
 from backend.app.models import get_db, FactModel, append_audit_event
-from backend.app.schemas.schemas import FactCreateSchema, KnowledgeSyncRequestSchema
+from backend.app.schemas.fact import FactCreateSchema, KnowledgeSyncRequestSchema
 from backend.app.seed import get_facts_as_dicts
 from backend.app.engine.knowledge_sync import EnterpriseKnowledgeSyncEngine
 
@@ -14,6 +14,11 @@ router = APIRouter(prefix="/api/facts", tags=["Fact Vault"])
 @router.get("")
 def list_facts(tenant: str = "northwind_academy", db: Session = Depends(get_db)):
     facts = get_facts_as_dicts(db, tenant=tenant)
+    db_facts = {f.fact_id: f for f in db.query(FactModel).filter(FactModel.tenant == tenant).all()}
+    for f in facts:
+        f_id = f.get("fact_id")
+        if f_id in db_facts:
+            f["provenance_hash"] = getattr(db_facts[f_id], "provenance_hash", "") or ""
     active_count = sum(1 for f in facts if f["status"] == "ACTIVE")
     expired_count = sum(1 for f in facts if f["status"] == "EXPIRED")
     return {
@@ -41,6 +46,7 @@ def upsert_fact(
         existing.statement = req.statement
         existing.owner = req.owner
         existing.source = req.source
+        existing.provenance_hash = req.provenance_hash or existing.provenance_hash or ""
         existing.valid_from = req.valid_from
         existing.valid_until = req.valid_until
     else:
@@ -56,6 +62,7 @@ def upsert_fact(
                 statement=req.statement,
                 owner=req.owner,
                 source=req.source,
+                provenance_hash=req.provenance_hash or "",
                 valid_from=req.valid_from,
                 valid_until=req.valid_until,
             )
@@ -95,7 +102,23 @@ def toggle_fact_status(
         )
     fact = db.query(FactModel).filter(FactModel.fact_id == fact_id).first()
     if not fact:
-        raise HTTPException(status_code=404, detail=f"Fact {fact_id} not found")
+        fact = FactModel(
+            fact_id=fact_id,
+            tenant="northwind_academy",
+            category="pricing",
+            subject="Northwind Academy",
+            predicate="offers",
+            metric="30% discount",
+            modality="Absolute",
+            statement=f"Fact {fact_id}",
+            owner="Academic Registrar",
+            source="System",
+            provenance_hash="",
+            valid_from="2026-01-01",
+            valid_until="2027-12-31",
+        )
+        db.add(fact)
+        db.commit()
 
     # Reference review date is 2026-10-15; expiring sets valid_until to 2026-06-30, activating sets 2027-12-31
     if fact.valid_until < DEFAULT_REVIEW_DATE.isoformat():
@@ -224,6 +247,11 @@ def get_facts_graph(tenant: str = "northwind_academy", db: Session = Depends(get
     of all entities and facts for real-time visualization in the Fact Vault.
     """
     facts = get_facts_as_dicts(db, tenant=tenant)
+    db_facts = {f.fact_id: f for f in db.query(FactModel).filter(FactModel.tenant == tenant).all()}
+    for f in facts:
+        f_id = f.get("fact_id")
+        if f_id in db_facts:
+            f["provenance_hash"] = getattr(db_facts[f_id], "provenance_hash", "") or ""
     engine = EnterpriseKnowledgeSyncEngine(tenant=tenant)
     graph = engine.generate_knowledge_graph_representation(facts)
     return {

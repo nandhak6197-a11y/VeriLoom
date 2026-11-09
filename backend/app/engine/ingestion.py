@@ -77,18 +77,22 @@ def ingest_document_bytes(filename: str, file_bytes: bytes) -> Dict[str, Any]:
                     pages_text.append(t)
                 image_count += len(page.get_images(full=True))
 
-            if not pages_text:
-                # Scanned or raster image PDF fallback (§Round 3 Improvement 3)
+            extracted_text = "\n\n".join(pages_text).strip()
+
+            if not extracted_text.strip() and image_count > 0:
+                # Scanned or raster image PDF OCR fallback (§Round 3 Improvement 3)
                 from backend.app.engine.layout_safezone import parse_scanned_pdf_bytes
                 raster_res = parse_scanned_pdf_bytes(file_bytes)
                 extracted_text = raster_res.get("extracted_text", "")
                 metadata["ocr_raster_fallback"] = True
-                metadata["detected_layers"] = raster_res.get("detected_layers", 0)
-            else:
-                extracted_text = "\n\n".join(pages_text)
+                metadata["detected_layers"] = raster_res.get("detected_layers", image_count)
+                metadata["total_images"] = raster_res.get("total_images", image_count)
+                metadata["pages"] = raster_res.get("pages", [])
+                metadata["image_structures"] = raster_res.get("pages", [])
+                metadata["is_scanned_pdf"] = raster_res.get("is_scanned_pdf", True)
 
             metadata["page_count"] = len(doc)
-            metadata["embedded_images"] = image_count
+            metadata["embedded_images"] = max(image_count, metadata.get("total_images", 0))
         except Exception as exc:
             extracted_text = file_bytes.decode("utf-8", errors="replace")
             metadata["parse_warning"] = str(exc)

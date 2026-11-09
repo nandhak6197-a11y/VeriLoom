@@ -14,8 +14,12 @@ from datetime import date, datetime, timedelta
 from typing import List, Dict, Any, Tuple, Optional
 
 
-def compute_sha256_text(text: str) -> str:
-    """Computes SHA-256 digest of normalized input text."""
+def compute_sha256_text(text: Any) -> str:
+    """Computes SHA-256 digest of normalized input text or raw bytes."""
+    if isinstance(text, bytes):
+        return hashlib.sha256(text).hexdigest()
+    if not isinstance(text, str):
+        text = str(text)
     return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
 
 
@@ -58,7 +62,7 @@ class EnterpriseKnowledgeSyncEngine:
 
     def extract_atomic_facts_from_document(
         self,
-        document_text: str,
+        document_text: Any,
         source_name: str = "Enterprise Document",
         source_type: str = "confluence_page",
         default_valid_days: int = 180,
@@ -68,15 +72,24 @@ class EnterpriseKnowledgeSyncEngine:
         **kwargs,
     ) -> List[Dict[str, Any]]:
         """
-        Extracts verified atomic facts from enterprise text with cryptographic
-        source provenance and validity window scheduling.
+        Extracts verified atomic facts from enterprise text or bytes (JSON, CSV, markdown, or prose)
+        with SHA-256 cryptographic source provenance and time-bounded validity window scheduling.
         """
         if source_title:
             source_name = source_title
         if doc_type:
             source_type = doc_type
 
+        # Compute SHA-256 cryptographic provenance digest over source document
         source_sha256 = compute_sha256_text(document_text)
+
+        if isinstance(document_text, bytes):
+            doc_str = document_text.decode("utf-8", errors="replace")
+        elif not isinstance(document_text, str):
+            doc_str = str(document_text)
+        else:
+            doc_str = document_text
+
         if effective_year:
             today = date(effective_year, 1, 1)
         else:
@@ -84,69 +97,82 @@ class EnterpriseKnowledgeSyncEngine:
 
         valid_from = today.isoformat()
         valid_until = (today + timedelta(days=default_valid_days)).isoformat()
+        ref_date = today.isoformat()
 
         extracted_facts: List[Dict[str, Any]] = []
         seen_keys = set()
-        fact_counter = 1
 
         # 1. Structured JSON Feed Ingestion
-        cleaned_text = document_text.strip()
+        cleaned_text = doc_str.strip()
         if cleaned_text.startswith(("{", "[")):
             try:
                 parsed_json = json.loads(cleaned_text)
-                items = parsed_json if isinstance(parsed_json, list) else parsed_json.get("facts", [parsed_json])
+                if isinstance(parsed_json, list):
+                    items = parsed_json
+                elif isinstance(parsed_json, dict):
+                    items = parsed_json.get("facts") or parsed_json.get("items") or parsed_json.get("data") or [parsed_json]
+                else:
+                    items = []
                 for item in items:
-                    if isinstance(item, dict) and "subject" in item and "metric" in item:
-                        s_name = item.get("subject", "").strip()
-                        m_val = str(item.get("metric", "")).strip()
-                        p_val = item.get("predicate", "states").strip()
-                        cat = item.get("category", "operations")
-                        stmt = item.get("statement", f"{s_name} {p_val} {m_val}")
-                        dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
-                        if dedup not in seen_keys:
-                            seen_keys.add(dedup)
-                            f_id = f"F-SYNC-JSON-{hashlib.md5(dedup.encode()).hexdigest()[:6].upper()}"
-                            extracted_facts.append({
-                                "fact_id": f_id,
-                                "tenant": self.tenant,
-                                "category": cat,
-                                "subject": s_name,
-                                "predicate": p_val,
-                                "metric": m_val,
-                                "modality": item.get("modality", "strict"),
-                                "statement": stmt,
-                                "owner": f"Enterprise Sync ({source_name})",
-                                "source": f"{source_type}:{source_name}",
-                                "source_sha256": source_sha256,
-                                "provenance_hash": source_sha256,
-                                "valid_from": item.get("valid_from", valid_from),
-                                "valid_until": item.get("valid_until", valid_until),
-                                "status": "ACTIVE" if item.get("valid_until", valid_until) >= date.today().isoformat() else "EXPIRED",
-                            })
+                    if isinstance(item, dict):
+                        norm_item = {k.strip().lower(): v for k, v in item.items() if isinstance(k, str)}
+                        if "subject" in norm_item and "metric" in norm_item:
+                            s_name = str(norm_item.get("subject", "")).strip()
+                            m_val = str(norm_item.get("metric", "")).strip()
+                            p_val = str(norm_item.get("predicate", "states")).strip()
+                            cat = str(norm_item.get("category", "operations")).strip()
+                            stmt = str(norm_item.get("statement", f"{s_name} {p_val} {m_val}")).strip()
+                            item_valid_from = str(norm_item.get("valid_from", valid_from)).strip()
+                            item_valid_until = str(norm_item.get("valid_until", valid_until)).strip()
+                            dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
+                            if dedup not in seen_keys:
+                                seen_keys.add(dedup)
+                                f_id = f"F-SYNC-{hashlib.md5(dedup.encode()).hexdigest()[:6].upper()}"
+                                extracted_facts.append({
+                                    "fact_id": f_id,
+                                    "tenant": self.tenant,
+                                    "category": cat,
+                                    "subject": s_name,
+                                    "predicate": p_val,
+                                    "metric": m_val,
+                                    "modality": norm_item.get("modality", "strict"),
+                                    "statement": stmt,
+                                    "owner": f"Enterprise Sync ({source_name})",
+                                    "source": f"{source_type}:{source_name}",
+                                    "source_sha256": source_sha256,
+                                    "provenance_hash": source_sha256,
+                                    "valid_from": item_valid_from,
+                                    "valid_until": item_valid_until,
+                                    "status": "ACTIVE" if item_valid_until >= ref_date else "EXPIRED",
+                                })
                 if extracted_facts:
                     return extracted_facts
             except Exception:
                 pass
 
-        # 2. Structured CSV Feed Ingestion
-        if "\n" in cleaned_text and ("," in cleaned_text or "\t" in cleaned_text) and not cleaned_text.startswith("#"):
+        # 2. Structured CSV / TSV Feed Ingestion
+        first_line = cleaned_text.splitlines()[0] if cleaned_text else ""
+        has_csv_delim = any(d in first_line for d in (",", "\t", ";"))
+        if has_csv_delim and not cleaned_text.startswith("#"):
             try:
                 import csv
                 import io
-                delimiter = "\t" if "\t" in cleaned_text.splitlines()[0] else ","
+                delimiter = "\t" if "\t" in first_line else (";" if ";" in first_line else ",")
                 reader = csv.DictReader(io.StringIO(cleaned_text), delimiter=delimiter)
                 for row in reader:
-                    low_row = {k.strip().lower(): v.strip() for k, v in row.items() if k}
+                    low_row = {k.strip().lower(): v.strip() for k, v in row.items() if k and v is not None}
                     if "subject" in low_row and "metric" in low_row:
                         s_name = low_row["subject"]
                         m_val = low_row["metric"]
                         p_val = low_row.get("predicate", "states")
                         cat = low_row.get("category", "general")
                         stmt = low_row.get("statement", f"{s_name} {p_val} {m_val}")
+                        item_valid_from = low_row.get("valid_from", valid_from)
+                        item_valid_until = low_row.get("valid_until", valid_until)
                         dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
                         if dedup not in seen_keys:
                             seen_keys.add(dedup)
-                            f_id = f"F-SYNC-CSV-{hashlib.md5(dedup.encode()).hexdigest()[:6].upper()}"
+                            f_id = f"F-SYNC-{hashlib.md5(dedup.encode()).hexdigest()[:6].upper()}"
                             extracted_facts.append({
                                 "fact_id": f_id,
                                 "tenant": self.tenant,
@@ -160,19 +186,68 @@ class EnterpriseKnowledgeSyncEngine:
                                 "source": f"{source_type}:{source_name}",
                                 "source_sha256": source_sha256,
                                 "provenance_hash": source_sha256,
-                                "valid_from": low_row.get("valid_from", valid_from),
-                                "valid_until": low_row.get("valid_until", valid_until),
-                                "status": "ACTIVE" if low_row.get("valid_until", valid_until) >= date.today().isoformat() else "EXPIRED",
+                                "valid_from": item_valid_from,
+                                "valid_until": item_valid_until,
+                                "status": "ACTIVE" if item_valid_until >= ref_date else "EXPIRED",
                             })
                 if extracted_facts:
                     return extracted_facts
             except Exception:
                 pass
 
-        # 3. Unstructured Prose Ingestion (Sentence-level Regex)
-        clauses = re.split(r"(?<=[.!?\n])\s+", document_text.strip())
+        # 3. Markdown Table Feed Ingestion
+        if "|" in cleaned_text and ("-|-" in cleaned_text or "|---" in cleaned_text):
+            try:
+                lines = [l.strip() for l in cleaned_text.splitlines() if l.strip().startswith("|")]
+                if len(lines) >= 3:
+                    headers = [h.strip().lower() for h in lines[0].strip("|").split("|")]
+                    if "subject" in headers and "metric" in headers:
+                        s_idx = headers.index("subject")
+                        m_idx = headers.index("metric")
+                        p_idx = headers.index("predicate") if "predicate" in headers else -1
+                        c_idx = headers.index("category") if "category" in headers else -1
+                        st_idx = headers.index("statement") if "statement" in headers else -1
+                        vf_idx = headers.index("valid_from") if "valid_from" in headers else -1
+                        vu_idx = headers.index("valid_until") if "valid_until" in headers else -1
+                        for line in lines[2:]:
+                            cells = [c.strip() for c in line.strip("|").split("|")]
+                            if len(cells) > max(s_idx, m_idx):
+                                s_name = cells[s_idx]
+                                m_val = cells[m_idx]
+                                p_val = cells[p_idx] if p_idx != -1 and len(cells) > p_idx and cells[p_idx] else "states"
+                                cat = cells[c_idx] if c_idx != -1 and len(cells) > c_idx and cells[c_idx] else "general"
+                                stmt = cells[st_idx] if st_idx != -1 and len(cells) > st_idx and cells[st_idx] else f"{s_name} {p_val} {m_val}"
+                                item_valid_from = cells[vf_idx] if vf_idx != -1 and len(cells) > vf_idx and cells[vf_idx] else valid_from
+                                item_valid_until = cells[vu_idx] if vu_idx != -1 and len(cells) > vu_idx and cells[vu_idx] else valid_until
+                                dedup = f"{s_name.lower()}:{p_val}:{m_val.lower()}"
+                                if dedup not in seen_keys:
+                                    seen_keys.add(dedup)
+                                    f_id = f"F-SYNC-{hashlib.md5(dedup.encode()).hexdigest()[:6].upper()}"
+                                    extracted_facts.append({
+                                        "fact_id": f_id,
+                                        "tenant": self.tenant,
+                                        "category": cat,
+                                        "subject": s_name,
+                                        "predicate": p_val,
+                                        "metric": m_val,
+                                        "modality": "strict",
+                                        "statement": stmt,
+                                        "owner": f"Enterprise Sync ({source_name})",
+                                        "source": f"{source_type}:{source_name}",
+                                        "source_sha256": source_sha256,
+                                        "provenance_hash": source_sha256,
+                                        "valid_from": item_valid_from,
+                                        "valid_until": item_valid_until,
+                                        "status": "ACTIVE" if item_valid_until >= ref_date else "EXPIRED",
+                                    })
+                        if extracted_facts:
+                            return extracted_facts
+            except Exception:
+                pass
 
-        fact_counter = 1
+        # 4. Unstructured Prose Ingestion (Sentence-level Regex)
+        clauses = re.split(r"(?<=[.!?\n])\s+", doc_str.strip())
+
         for clause in clauses:
             clause_clean = clause.strip()
             if not clause_clean or len(clause_clean) < 10:
@@ -192,9 +267,18 @@ class EnterpriseKnowledgeSyncEngine:
 
                     fact_id = f"F-SYNC-{hashlib.md5(dedup_key.encode()).hexdigest()[:6].upper()}"
 
-                    # Check for explicit expiration date in clause
-                    exp_match = re.search(r"valid (?:until|through|to)\s+(\d{4}-\d{2}-\d{2})", clause_clean, re.IGNORECASE)
+                    # Explicit valid_from and valid_until in clause, falling back to document-level
+                    vf_match = re.search(r"(?:valid|effective)\s+from\s+(\d{4}-\d{2}-\d{2})", clause_clean, re.IGNORECASE)
+                    if not vf_match:
+                        vf_match = re.search(r"(?:valid|effective)\s+from\s+(\d{4}-\d{2}-\d{2})", doc_str, re.IGNORECASE)
+                    actual_valid_from = vf_match.group(1) if vf_match else valid_from
+
+                    exp_match = re.search(r"(?:valid\s+(?:until|through|to)|expires?\s*(?:on|at)?|expiration:?)\s*(\d{4}-\d{2}-\d{2})", clause_clean, re.IGNORECASE)
+                    if not exp_match:
+                        exp_match = re.search(r"(?:valid\s+(?:until|through|to)|expires?\s*(?:on|at)?|expiration:?)\s*(\d{4}-\d{2}-\d{2})", doc_str, re.IGNORECASE)
                     actual_valid_until = exp_match.group(1) if exp_match else valid_until
+
+                    status = "ACTIVE" if actual_valid_until >= ref_date else "EXPIRED"
 
                     extracted_facts.append({
                         "fact_id": fact_id,
@@ -209,11 +293,10 @@ class EnterpriseKnowledgeSyncEngine:
                         "source": f"{source_type}:{source_name}",
                         "source_sha256": source_sha256,
                         "provenance_hash": source_sha256,
-                        "valid_from": valid_from,
+                        "valid_from": actual_valid_from,
                         "valid_until": actual_valid_until,
-                        "status": "ACTIVE" if actual_valid_until >= date.today().isoformat() else "EXPIRED",
+                        "status": status,
                     })
-                    fact_counter += 1
 
         return extracted_facts
 
@@ -229,7 +312,7 @@ class EnterpriseKnowledgeSyncEngine:
         impacted_assets: List[Dict[str, Any]] = []
 
         for sub in pending_submissions:
-            content = sub.get("current_content") or sub.get("raw_content", "")
+            content = sub.get("current_content") or sub.get("raw_content", "") or ""
             asset_id = sub.get("asset_id", "UNKNOWN")
             title = sub.get("title", "")
 
@@ -246,29 +329,80 @@ class EnterpriseKnowledgeSyncEngine:
                 subj_words = [w for w in subj.split() if len(w) > 3]
                 subj_matches = (subj and subj in content.lower()) or any(w in content.lower() for w in subj_words) or ("discount" in content.lower() and (f_cat == "pricing" or "%" in metric))
                 if subj_matches:
-                    # Check if the asset mentions a DIFFERENT number/metric for the same subject
-                    if f_cat == "curriculum" and "week" in metric:
-                        # Duration check
-                        dur_match = re.search(r"(\d+)\s+weeks?", content, re.IGNORECASE)
-                        if dur_match and dur_match.group(0).lower() != metric:
-                            conflicts.append({
-                                "fact_id": f.get("fact_id"),
-                                "type": "DURATION_MISMATCH",
-                                "draft_claim": dur_match.group(0),
-                                "verified_fact": metric,
-                                "explanation": f"Draft asserts {dur_match.group(0)} for {f.get('subject')}, but enterprise doc states {metric} ({f_status}).",
-                            })
+                    # 1. Duration check
+                    if f_cat == "curriculum" and ("week" in metric or "month" in metric or "day" in metric):
+                        dur_match = re.search(r"(\d+)\s+(?:weeks?|months?|days?)", content, re.IGNORECASE)
+                        if dur_match:
+                            if dur_match.group(0).lower() != metric:
+                                conflicts.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "type": "DURATION_MISMATCH",
+                                    "draft_claim": dur_match.group(0),
+                                    "verified_fact": metric,
+                                    "explanation": f"Draft asserts {dur_match.group(0)} for {f.get('subject')}, but enterprise doc states {metric} ({f_status}).",
+                                })
+                            else:
+                                supports.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "matched_metric": metric,
+                                    "status": f_status,
+                                })
+                    # 2. Pricing / Discount check
                     elif (f_cat == "pricing" or "%" in metric) and "%" in metric:
                         disc_match = re.search(r"(\d+%)", content)
-                        if disc_match and disc_match.group(0).lower() != metric:
-                            conflicts.append({
-                                "fact_id": f.get("fact_id"),
-                                "type": "DISCOUNT_MISMATCH",
-                                "draft_claim": disc_match.group(0),
-                                "verified_fact": metric,
-                                "explanation": f"Draft asserts {disc_match.group(0)} for {f.get('subject')}, but enterprise doc specifies {metric}.",
-                            })
-                    elif metric and metric in content.lower():
+                        if disc_match:
+                            if disc_match.group(0).lower() != metric:
+                                conflicts.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "type": "DISCOUNT_MISMATCH",
+                                    "draft_claim": disc_match.group(0),
+                                    "verified_fact": metric,
+                                    "explanation": f"Draft asserts {disc_match.group(0)} for {f.get('subject')}, but enterprise doc specifies {metric}.",
+                                })
+                            else:
+                                supports.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "matched_metric": metric,
+                                    "status": f_status,
+                                })
+                    # 3. Outcome / Pass rate check
+                    elif f_cat == "outcomes" or "placement" in metric or "pass rate" in metric or "rate" in metric:
+                        rate_match = re.search(r"(\d+%)\s+(?:job\s+)?(?:placement|pass|employment|success)", content, re.IGNORECASE)
+                        if rate_match:
+                            if rate_match.group(1).lower() not in metric:
+                                conflicts.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "type": "OUTCOME_MISMATCH",
+                                    "draft_claim": rate_match.group(0),
+                                    "verified_fact": metric,
+                                    "explanation": f"Draft asserts {rate_match.group(0)} for {f.get('subject')}, but enterprise doc specifies {metric} ({f_status}).",
+                                })
+                            else:
+                                supports.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "matched_metric": metric,
+                                    "status": f_status,
+                                })
+                    # 4. Capacity limit check
+                    elif f_cat == "operations" or "cap" in f.get("predicate", "") or "students" in metric or "learners" in metric or "seats" in metric:
+                        cap_match = re.search(r"(\d+)\s+(?:students?|learners?|participants?|seats?)", content, re.IGNORECASE)
+                        if cap_match:
+                            if cap_match.group(0).lower() != metric:
+                                conflicts.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "type": "CAPACITY_MISMATCH",
+                                    "draft_claim": cap_match.group(0),
+                                    "verified_fact": metric,
+                                    "explanation": f"Draft asserts {cap_match.group(0)} for {f.get('subject')}, but enterprise doc specifies {metric} ({f_status}).",
+                                })
+                            else:
+                                supports.append({
+                                    "fact_id": f.get("fact_id"),
+                                    "matched_metric": metric,
+                                    "status": f_status,
+                                })
+                    # 5. Generic support check
+                    if metric and metric in content.lower() and not any(s.get("fact_id") == f.get("fact_id") for s in supports) and not any(c.get("fact_id") == f.get("fact_id") for c in conflicts):
                         supports.append({
                             "fact_id": f.get("fact_id"),
                             "matched_metric": metric,
@@ -300,7 +434,8 @@ class EnterpriseKnowledgeSyncEngine:
     ) -> Dict[str, Any]:
         """
         Formats facts into a graph structure (nodes & edges) for interactive
-        frontend visualization in the Fact Vault.
+        frontend visualization in the Fact Vault, returning all active and expired facts
+        with labeled predicate edges.
         """
         nodes: List[Dict[str, Any]] = []
         edges: List[Dict[str, Any]] = []
@@ -316,12 +451,13 @@ class EnterpriseKnowledgeSyncEngine:
                     "type": "fact",
                     "category": f.get("category", "general"),
                     "status": f.get("status", "ACTIVE"),
+                    "provenance_hash": f.get("provenance_hash") or f.get("source_sha256") or "",
                     "details": f.get("statement", ""),
                 })
                 node_ids.add(f_node_id)
 
             # Subject node
-            subj_id = f"SUBJ-{hashlib.md5(f['subject'].encode()).hexdigest()[:6]}"
+            subj_id = f"SUBJ-{hashlib.md5(f['subject'].encode()).hexdigest()[:6].upper()}"
             if subj_id not in node_ids:
                 nodes.append({
                     "id": subj_id,
@@ -329,6 +465,7 @@ class EnterpriseKnowledgeSyncEngine:
                     "type": "subject",
                     "category": f.get("category", "general"),
                     "status": "ACTIVE",
+                    "provenance_hash": "",
                     "details": f"Entity: {f['subject']}",
                 })
                 node_ids.add(subj_id)
@@ -339,6 +476,7 @@ class EnterpriseKnowledgeSyncEngine:
                 "source": subj_id,
                 "target": f_node_id,
                 "label": f.get("predicate", "states"),
+                "predicate": f.get("predicate", "states"),
                 "status": f.get("status", "ACTIVE"),
             })
 

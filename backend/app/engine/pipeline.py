@@ -79,18 +79,32 @@ def run_full_verification_pipeline(
             all_fact_ids=all_fact_ids,
             origin=origin,
         )
-        suggestion = generate_surgical_suggestion(
-            full_text=normalized_text,
-            finding=composed,
-            must_keep_points=must_keep_points,
-        )
-        composed["finding_id"] = rf.get("finding_id") or f"FND-{uuid.uuid4().hex[:8].upper()}"
-        composed["suggested_fix"] = suggestion["suggested_fix"]
-        composed["tracked_change"] = suggestion["tracked_change"]
-        composed["ipm_score"] = suggestion["ipm_score"]
-        composed["must_keep_preserved"] = suggestion["must_keep_preserved"]
-        composed["passes_ipm"] = suggestion["passes_ipm"]
-        composed["intent_lock_note"] = suggestion["intent_lock_note"]
+        if rf.get("check_type") == "regulatory_compliance":
+            composed["finding_id"] = rf.get("finding_id") or f"FND-{uuid.uuid4().hex[:8].upper()}"
+            composed["suggested_fix"] = rf.get("suggested_fix") or f"{normalized_text}\n\n{rf.get('suggested_disclosure', '')}"
+            composed["tracked_change"] = rf.get("tracked_change") or f"{normalized_text} {{+{rf.get('suggested_disclosure', '')}+}}"
+            composed["suggested_disclosure"] = rf.get("suggested_disclosure", "")
+            composed["channel"] = channel
+            composed["channel_char_limit"] = rf.get("channel_char_limit", 280)
+            composed["projected_length"] = rf.get("projected_length", len(normalized_text))
+            composed["fits_in_channel"] = rf.get("fits_in_channel", True)
+            composed["ipm_score"] = 1.0
+            composed["must_keep_preserved"] = True
+            composed["passes_ipm"] = True
+            composed["intent_lock_note"] = "Non-destructive statutory disclosure append/injection."
+        else:
+            suggestion = generate_surgical_suggestion(
+                full_text=normalized_text,
+                finding=composed,
+                must_keep_points=must_keep_points,
+            )
+            composed["finding_id"] = rf.get("finding_id") or f"FND-{uuid.uuid4().hex[:8].upper()}"
+            composed["suggested_fix"] = suggestion["suggested_fix"]
+            composed["tracked_change"] = suggestion["tracked_change"]
+            composed["ipm_score"] = suggestion["ipm_score"]
+            composed["must_keep_preserved"] = suggestion["must_keep_preserved"]
+            composed["passes_ipm"] = suggestion["passes_ipm"]
+            composed["intent_lock_note"] = suggestion["intent_lock_note"]
         composed_findings.append(composed)
 
     # Determine Overall Verdict & Assigned Reviewer Role

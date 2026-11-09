@@ -357,3 +357,150 @@ def test_submission_with_jurisdiction_and_disclosure_application():
     assert "EU AI Act Article 50" in updated_data["current_content"]
     assert updated_data["normalized_sha256"] != asset_data["normalized_sha256"]
 
+
+def test_visual_audit_custom_upload_key_mapping():
+    """Validates lines 426-433 in submissions.py properly map width, height, and text_boxes from audit_res."""
+    import base64
+    import io
+    from PIL import Image, ImageDraw
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+
+    client = TestClient(app)
+
+    # Generate a test image with high-contrast text and custom dimensions (800x400)
+    img = Image.new("RGB", (800, 400), color=(15, 43, 72))  # Northwind navy
+    draw = ImageDraw.Draw(img)
+    # Add text bars that create OCR text boxes
+    for x_off in range(60, 700, 20):
+        draw.rectangle([x_off, 120, x_off + 10, 160], fill=(248, 250, 252))
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64_str = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    res = client.post("/api/submissions/visual-audit", json={
+        "mode": "custom_upload",
+        "image_base64": f"data:image/png;base64,{b64_str}",
+        "filename": "custom_test_banner.png",
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert "safe_zone_audit" in data
+    sz = data["safe_zone_audit"]
+    # Image width and height must match the uploaded image dimensions (800, 400), not default (1200, 630)
+    assert data["width"] == 800
+    assert data["height"] == 400
+    assert "edge_clearance" in sz
+    # Check that logo safe-zone audit received real text boxes
+    assert isinstance(data.get("text_boxes"), list)
+    assert len(data.get("text_boxes")) >= 1
+    assert "required_margin_px" in sz
+    assert "clearance_box" in sz
+    assert "is_compliant" in sz
+
+
+def test_certificate_api_download_and_proofs():
+    """Validates /api/submissions/{asset_id}/certificate contains dual SHA-256, signature, CIEDE2000, and Merkle proof."""
+    from fastapi.testclient import TestClient
+    from backend.app.main import app
+
+    client = TestClient(app)
+
+    # 1. Create a submission
+    res = client.post("/api/submissions", json={
+        "title": "Certificate Proof Verification Asset",
+        "content": "Certified corporate communication for Northwind Academy.",
+        "creator_intent": "Audited release",
+        "must_keep_points": ["Northwind Academy"],
+        "origin": "employee",
+        "channel": "web",
+        "jurisdiction": "US",
+        "actor_name": "Auditor Test",
+        "actor_role": "Creator"
+    })
+    assert res.status_code == 200
+    asset_id = res.json()["asset_id"]
+
+    # 2. Query certificate JSON
+    cert_res = client.get(f"/api/submissions/{asset_id}/certificate?signer_name=Auditor%20One&signer_role=Brand%20Admin")
+    assert cert_res.status_code == 200
+    cert = cert_res.json()
+
+    # Verify all required proof elements per R3 / AC-API-06
+    assert cert["certificate_id"].startswith("CERT-VERILOOM-")
+    assert cert["asset_id"] == asset_id
+    assert "content_sha256" in cert and len(cert["content_sha256"]) == 64
+    assert "report_sha256" in cert and len(cert["report_sha256"]) == 64
+    assert cert["cryptographic_proof"]["dual_sha256"]["asset_content_sha256"] == cert["content_sha256"]
+    assert cert["cryptographic_proof"]["dual_sha256"]["compliance_report_sha256"] == cert["report_sha256"]
+    assert "digital_signature" in cert and len(cert["digital_signature"]) == 64
+    assert "ciede2000_proof" in cert
+    assert cert["ciede2000_proof"]["status"] == "PASS"
+    assert "merkle_root" in cert and len(cert["merkle_root"]) > 0
+    assert cert["cryptographic_validity"] is True
+    assert "timestamp" in cert
+    assert cert["governance_signoff"]["signed_by"] == "Auditor One"
+    assert cert["governance_signoff"]["role"] == "Brand Admin"
+
+    # 3. Query certificate with download=true
+    dl_res = client.get(f"/api/submissions/{asset_id}/certificate?download=true")
+    assert dl_res.status_code == 200
+    assert "attachment" in dl_res.headers.get("Content-Disposition", "")
+    assert f"certificate-{asset_id}.json" in dl_res.headers.get("Content-Disposition", "")
+
+
+def test_logo_safe_zone_four_boundary_margins():
+    """Validates pixel-level logo safe-zone clearance enforcing minimum 0.5x height padding on all 4 boundaries."""
+    # Logo: 200w x 80h -> 0.5x height = 40px required margin on all 4 boundaries
+    # Canvas: 1000 x 500
+
+    # Test Left margin violation (x=30 < 40)
+    left_fail = audit_logo_safe_zone(
+        image_width=1000,
+        image_height=500,
+        logo_bbox={"x": 30, "y": 50, "width": 200, "height": 80},
+    )
+    assert left_fail["is_compliant"] is False
+    assert any("Left canvas margin" in v for v in left_fail["edge_violations"])
+
+    # Test Top margin violation (y=20 < 40)
+    top_fail = audit_logo_safe_zone(
+        image_width=1000,
+        image_height=500,
+        logo_bbox={"x": 50, "y": 20, "width": 200, "height": 80},
+    )
+    assert top_fail["is_compliant"] is False
+    assert any("Top canvas margin" in v for v in top_fail["edge_violations"])
+
+    # Test Right margin violation (x=770, width=200 -> right clearance = 1000 - 970 = 30 < 40)
+    right_fail = audit_logo_safe_zone(
+        image_width=1000,
+        image_height=500,
+        logo_bbox={"x": 770, "y": 50, "width": 200, "height": 80},
+    )
+    assert right_fail["is_compliant"] is False
+    assert any("Right canvas margin" in v for v in right_fail["edge_violations"])
+
+    # Test Bottom margin violation (y=400, height=80 -> bottom clearance = 500 - 480 = 20 < 40)
+    bottom_fail = audit_logo_safe_zone(
+        image_width=1000,
+        image_height=500,
+        logo_bbox={"x": 50, "y": 400, "width": 200, "height": 80},
+    )
+    assert bottom_fail["is_compliant"] is False
+    assert any("Bottom canvas margin" in v for v in bottom_fail["edge_violations"])
+
+    # Test Compliant logo (x=50, y=50, width=200, height=80 -> all clearances >= 40)
+    pass_res = audit_logo_safe_zone(
+        image_width=1000,
+        image_height=500,
+        logo_bbox={"x": 50, "y": 50, "width": 200, "height": 80},
+    )
+    assert pass_res["is_compliant"] is True
+    assert pass_res["passes_safe_zone"] is True
+    assert pass_res["required_margin_px"] == 40.0
+    assert len(pass_res["edge_violations"]) == 0
+    assert pass_res["encroachment_count"] == 0
+
+

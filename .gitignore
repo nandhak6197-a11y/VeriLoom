@@ -18,3 +18,5 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
+*.exe
+.agents/

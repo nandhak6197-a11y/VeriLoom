@@ -33,6 +33,7 @@ class FactCreateSchema(BaseModel):
     statement: str
     owner: str = "Academic Registrar"
     source: str
+    provenance_hash: Optional[str] = None
     valid_from: str
     valid_until: str
 
@@ -157,4 +158,34 @@ class SafeZoneAuditRequestSchema(BaseModel):
     mode: str = "custom_upload"  # compliant_demo, non_compliant_demo, custom_upload
     logo_bbox: Optional[Dict[str, int]] = None
     min_clearance_ratio: float = 0.5
+
+
+class SubmissionResponseSchema(BaseModel):
+    asset_id: str
+    tenant: str = "northwind_academy"
+    title: str
+    content_type: str = "text"
+    raw_content: str
+    normalized_content: str
+    current_content: str
+    creator_intent: str = ""
+    must_keep_points: List[str] = Field(default_factory=list)
+    origin: str = "employee"
+    channel: str = "social"
+    jurisdiction: str = "US"  # US, EU, UK, GLOBAL
+    status: str = "SUBMITTED"
+    assigned_role: str = "Brand Manager"
+    overall_verdict: str = "PASS"
+    original_sha256: str
+    normalized_sha256: str
+    approved_sha256: str = ""
+    approved_by: str = ""
+    approved_at: str = ""
+    rule_set_version: str = "v1.0.0"
+    receipt: Dict[str, Any] = Field(default_factory=dict)
+    revisions: List[Dict[str, Any]] = Field(default_factory=list)
+    created_at: str
+    findings_count: int = 0
+    findings: List[Dict[str, Any]] = Field(default_factory=list)
+    audit_block_hash: Optional[str] = None
 

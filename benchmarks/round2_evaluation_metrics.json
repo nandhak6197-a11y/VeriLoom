@@ -66,7 +66,7 @@
     "mailchimp_ood_accuracy": {
       "veriloom_round2": 1.0
     },
-    "avg_verification_latency_ms": 382.6
+    "avg_verification_latency_ms": 501.08
   },
   "worked_example_sec4_4": {
     "status_code": "UNSUPPORTED_CLAIM",
