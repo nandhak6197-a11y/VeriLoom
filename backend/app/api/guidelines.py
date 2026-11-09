@@ -154,3 +154,17 @@ def upsert_rule(
         rule_set_version=req.version,
     )
     return {"status": "ok", "rule_id": req.rule_id, "audit_block_hash": audit.block_hash}
+
+
+@router.get("/jurisdictions")
+def get_supported_jurisdictions():
+    """
+    Improvement 2 (§Round 3): Returns supported global advertising compliance jurisdictions
+    (US FTC, EU AI Act, UK CMA/ASA, Global) and their statutory clauses.
+    """
+    from backend.app.engine.regulatory_matrix import list_supported_jurisdictions
+    return {
+        "status": "ok",
+        "jurisdictions": list_supported_jurisdictions(),
+    }
+

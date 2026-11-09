@@ -10,6 +10,7 @@ from backend.app.engine.deterministic import run_deterministic_text_checks, comp
 from backend.app.engine.claim_verifier import verify_claims_and_semantics
 from backend.app.engine.verdict_composer import compose_verdict_and_route
 from backend.app.engine.surgical_rewriter import generate_surgical_suggestion
+from backend.app.engine.regulatory_matrix import evaluate_regulatory_compliance
 
 
 def run_full_verification_pipeline(
@@ -19,12 +20,14 @@ def run_full_verification_pipeline(
     must_keep_points: List[str] = None,
     origin: str = "employee",
     channel: str = "social",
+    jurisdiction: str = "US",
     review_date: date = None,
     confidential_terms: List[str] = None,
     rule_set_version: str = "v1.0.0",
 ) -> Dict[str, Any]:
     """
-    Executes the complete VeriLoom 9-layer verification pipeline on submitted content.
+    Executes the complete VeriLoom verification pipeline including cross-border
+    regulatory matrix evaluation (§Round 3 Improvement 2).
     """
     if must_keep_points is None:
         must_keep_points = []
@@ -57,7 +60,15 @@ def run_full_verification_pipeline(
         review_date=review_date,
     )
 
-    raw_findings = det_findings + sem_findings
+    # Step 4B: Multi-Jurisdiction Regulatory Matrix Checks (§Round 3 Improvement 2)
+    reg_findings = evaluate_regulatory_compliance(
+        text=normalized_text,
+        origin=origin,
+        channel=channel,
+        jurisdiction=jurisdiction,
+    )
+
+    raw_findings = det_findings + sem_findings + reg_findings
 
     # Step 5 & 6: Stability Gate, Code-Composed Verdicts, Risk Routing & Surgical IPM Rewrites (Layer 5 & 6)
     composed_findings: List[Dict[str, Any]] = []
@@ -116,6 +127,7 @@ def run_full_verification_pipeline(
         "overall_verdict": overall_verdict,
         "assigned_role": assigned_role,
         "findings_count": len(composed_findings),
+        "jurisdiction": jurisdiction,
         "findings": composed_findings,
         "receipt": receipt,
         "mask_summary": mask_res,

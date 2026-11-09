@@ -18,5 +18,6 @@ class FactModel(Base):
     statement = Column(Text, nullable=False)
     owner = Column(String(128), default="Academic Registrar")
     source = Column(String(256), nullable=False)
+    provenance_hash = Column(String(64), nullable=True, default="")
     valid_from = Column(String(32), nullable=False)   # YYYY-MM-DD
     valid_until = Column(String(32), nullable=False)  # YYYY-MM-DD

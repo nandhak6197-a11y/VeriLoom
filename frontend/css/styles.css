@@ -48,6 +48,13 @@
   --tier-advisory-text: #F7E6CA;
   --tier-advisory-border: rgba(232, 213, 158, 0.48);
 
+  /* Round 3: Obsidian & Emerald Accents */
+  --accent-emerald: #10B981;
+  --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+  --accent-amber: #F59E0B;
+  --accent-obsidian: #090D16;
+  --accent-slate: #0F172A;
+
   --tier-human-bg: rgba(217, 187, 176, 0.16);
   --tier-human-text: #F7E6CA;
   --tier-human-border: rgba(217, 187, 176, 0.48);
@@ -1391,6 +1398,61 @@ code {
 .btn-copy-hash:hover {
   color: var(--accent-cream);
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================================
+   Round 3 Production Innovations: Obsidian & Emerald UI/UX Elements
+   ============================================================================ */
+.top-jurisdiction-select {
+  background: transparent;
+  border: none;
+  color: var(--accent-emerald);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  padding: 0 4px;
+}
+
+.top-jurisdiction-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+#knowledge-graph-container {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+#fact-graph-svg g:hover circle {
+  filter: drop-shadow(0 0 8px var(--accent-emerald));
+  transform: scale(1.12);
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+#enterprise-sync-drawer {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  border-left: 3px solid var(--accent-emerald);
+}
+
+.safezone-pass-badge {
+  background: rgba(16, 185, 129, 0.16);
+  color: var(--accent-emerald);
+  border: 1px solid var(--accent-emerald);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.safezone-fail-badge {
+  background: rgba(244, 63, 94, 0.16);
+  color: #fca5a5;
+  border: 1px solid rgba(244, 63, 94, 0.6);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
 }
 
 .hidden {

@@ -53,6 +53,16 @@
             </button>
           </div>
 
+          <div class="top-control-pill" title="Active Regulatory Regime & Statutory Checks">
+            <label for="active-jurisdiction-select">Region</label>
+            <select id="active-jurisdiction-select" aria-label="Select regulatory jurisdiction" onchange="onGlobalJurisdictionChanged(this.value)">
+              <option value="US">🇺🇸 US (FTC)</option>
+              <option value="EU">🇪🇺 EU (AI Act)</option>
+              <option value="UK">🇬🇧 UK (CMA/ASA)</option>
+              <option value="GLOBAL">🌐 Global</option>
+            </select>
+          </div>
+
           <div class="top-control-pill">
             <label for="active-role-select">Role</label>
             <select id="active-role-select" aria-label="Select active workflow role" onchange="onRoleChanged()">
@@ -180,6 +190,15 @@
                       <option value="deck">Presentation Deck</option>
                     </select>
                   </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="sub-jurisdiction">Jurisdiction</label>
+                    <select id="sub-jurisdiction" class="form-control" onchange="onJurisdictionChanged()">
+                      <option value="US">🇺🇸 US (FTC 16 CFR §255)</option>
+                      <option value="EU">🇪🇺 EU (EU AI Act Art. 50)</option>
+                      <option value="UK">🇬🇧 UK (CMA & ASA CAP Code)</option>
+                      <option value="GLOBAL">🌐 Global Harmonized</option>
+                    </select>
+                  </div>
                 </div>
               </details>
 
@@ -250,6 +269,10 @@
                   <button type="button" id="btn-decision-REJECT" class="btn btn-ghost-danger btn-sm" onclick="submitAssetDecision('REJECT', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     Reject
+                  </button>
+                  <button type="button" id="btn-download-cert" class="btn btn-outline btn-sm" onclick="downloadComplianceCertificate(this)" title="Download Cryptographically Signed Compliance Proof Certificate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    📜 Audit Certificate
                   </button>
                 </div>
               </div>
@@ -420,9 +443,69 @@
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <span class="tier-badge tier-pass">Review Date: 2026-11-05</span>
+              <button type="button" id="btn-toggle-knowledge-graph" class="btn btn-outline btn-sm" onclick="toggleKnowledgeGraphView()">
+                🕸️ Fact Graph
+              </button>
+              <button type="button" id="btn-toggle-sync-drawer" class="btn btn-outline btn-sm" onclick="toggleEnterpriseSyncDrawer()">
+                🔄 Sync Enterprise Docs
+              </button>
               <button type="button" id="btn-toggle-add-fact" class="btn btn-primary btn-sm" onclick="toggleAddFactDrawer()">
                 + Add Approved Fact
               </button>
+            </div>
+          </div>
+
+          <!-- Improvement 1: Collapsible Enterprise Knowledge Sync HUD -->
+          <div id="enterprise-sync-drawer" class="hidden" style="background: var(--bg-input); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <strong style="color: var(--accent-cream); font-size: 1rem;">Enterprise Truth Sync &amp; Blast-Radius Engine (§Round 3 Improvement 1)</strong>
+                <span style="display: block; font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
+                  Ingests enterprise Confluence / Notion / Jira memos, extracts verified atomic facts with SHA-256 provenance hashes, and recalculates queue blast radius.
+                </span>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEnterpriseSyncDrawer()">Close</button>
+            </div>
+            <div class="form-row" style="grid-template-columns: 1fr 1fr auto; align-items: end; margin-bottom: 12px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="sync-source-name">Enterprise Document Title</label>
+                <input type="text" id="sync-source-name" class="form-control" value="Q4 2026 Enterprise Release Memo" />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="sync-source-type">Source Platform Feed</label>
+                <select id="sync-source-type" class="form-control" onchange="loadPresetEnterpriseDoc(this.value)">
+                  <option value="confluence">Atlassian Confluence Release Page</option>
+                  <option value="notion">Notion Curriculum Specification Feed</option>
+                  <option value="jira">Jira Outcomes Audit Report</option>
+                </select>
+              </div>
+              <button type="button" id="btn-run-knowledge-sync" class="btn btn-primary" onclick="executeEnterpriseKnowledgeSync(this)">
+                🔄 Sync Truth &amp; Recalculate Blast-Radius
+              </button>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="sync-document-text">Raw Unstructured Enterprise Documentation Text</label>
+              <textarea id="sync-document-text" class="form-control" rows="4" style="font-family: monospace; font-size: 0.85rem;">Northwind Academy offers a 30% discount for all enterprise partners in Q4 2026.
+Data Foundations takes 16 weeks to complete.
+AWS Cohort achieved a 94% job placement rate according to the internal auditor.
+Cohort size is capped at 30 students per session.</textarea>
+            </div>
+            <div id="sync-blast-radius-box"></div>
+          </div>
+
+          <!-- Improvement 1: Interactive Knowledge Graph Visualizer -->
+          <div id="knowledge-graph-container" class="hidden" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 18px; margin-bottom: 18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+              <div>
+                <strong style="color: var(--accent-cream); font-size: 1rem;">Enterprise Fact-Graph Visualizer (Entities, Facts &amp; Validity States)</strong>
+                <span style="display:block; font-size: 0.82rem; color: var(--text-muted); margin-top:2px;">
+                  Visualizes relationship tuples: Emerald = Active Fact &bull; Rose = Expired Fact &bull; Gold = Entity Subject
+                </span>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="toggleKnowledgeGraphView()">Hide Graph</button>
+            </div>
+            <div id="fact-graph-canvas-wrap" style="width: 100%; height: 320px; background: #1c1c1c; border-radius: 8px; border: 1px solid var(--border-subtle); overflow: hidden; position: relative;">
+              <svg id="fact-graph-svg" width="100%" height="100%" viewBox="0 0 900 320" style="display:block;"></svg>
             </div>
           </div>
 

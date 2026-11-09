@@ -13,7 +13,7 @@ def run_stability_gate_three_rephrasings(finding: Dict[str, Any]) -> Dict[str, A
       - Run 3 (Counterfactual Boundary Check): Does the violation persist under neutral whitespace/punctuation normalization?
     """
     check_type = finding.get("check_type", "deterministic")
-    if check_type in ("deterministic", "visual", "accessibility"):
+    if check_type in ("deterministic", "visual", "accessibility", "regulatory_compliance"):
         return {
             "runs": ["FLAG", "FLAG", "FLAG"],
             "agreement_ratio": 1.0,
@@ -81,7 +81,9 @@ def compose_verdict_and_route(
 
     # --- Defense 1: Citation validation & P05 Fact-in-Rule-Field Recovery ---
     citation_valid = True
-    if cited_rule not in active_rule_ids:
+    if cited_rule.startswith("REG-") or finding.get("check_type") == "regulatory_compliance":
+        citation_valid = True
+    elif cited_rule not in active_rule_ids:
         # Check if a Fact ID was mistakenly placed into rule_id (as seen in P05 baseline test: 'F-OUT-2025')
         if cited_rule in all_fact_ids:
             cited_fact = cited_rule

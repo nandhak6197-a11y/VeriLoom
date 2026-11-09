@@ -46,6 +46,7 @@ class SubmissionCreateSchema(BaseModel):
     must_keep_points: List[str] = Field(default_factory=list)
     origin: str = "employee"  # employee, agency, ai_generated
     channel: str = "social"
+    jurisdiction: str = "US"  # US, EU, UK, GLOBAL
     review_date: Optional[str] = None
     actor_name: str = "Creator User"
     actor_role: str = "Creator"
@@ -128,3 +129,32 @@ class PolicyReplayRequestSchema(BaseModel):
     proposed_severity: str = "Violation"
     proposed_patterns: Dict[str, Any] = Field(default_factory=dict)
     description: str = ""
+
+
+# =========================================================================
+# ROUND 3 PRODUCTION SCHEMAS (Improvements 1, 2, 3)
+# =========================================================================
+
+class KnowledgeSyncRequestSchema(BaseModel):
+    source_name: str = "Confluence Release Notes"
+    source_type: str = "confluence"
+    document_text: str
+    tenant: str = "northwind_academy"
+    auto_import_facts: bool = True
+
+
+class RegulatoryDisclosureApplySchema(BaseModel):
+    asset_id: str
+    rule_id: str
+    disclosure_text: str
+    placement: str = "append"  # append, prepend, footnote
+    actor_name: str = "Creator User"
+    actor_role: str = "Creator"
+
+
+class SafeZoneAuditRequestSchema(BaseModel):
+    image_base64: Optional[str] = None
+    mode: str = "custom_upload"  # compliant_demo, non_compliant_demo, custom_upload
+    logo_bbox: Optional[Dict[str, int]] = None
+    min_clearance_ratio: float = 0.5
+

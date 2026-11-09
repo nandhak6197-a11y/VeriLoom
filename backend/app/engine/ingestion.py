@@ -76,7 +76,17 @@ def ingest_document_bytes(filename: str, file_bytes: bytes) -> Dict[str, Any]:
                 if t:
                     pages_text.append(t)
                 image_count += len(page.get_images(full=True))
-            extracted_text = "\n\n".join(pages_text)
+
+            if not pages_text:
+                # Scanned or raster image PDF fallback (§Round 3 Improvement 3)
+                from backend.app.engine.layout_safezone import parse_scanned_pdf_bytes
+                raster_res = parse_scanned_pdf_bytes(file_bytes)
+                extracted_text = raster_res.get("extracted_text", "")
+                metadata["ocr_raster_fallback"] = True
+                metadata["detected_layers"] = raster_res.get("detected_layers", 0)
+            else:
+                extracted_text = "\n\n".join(pages_text)
+
             metadata["page_count"] = len(doc)
             metadata["embedded_images"] = image_count
         except Exception as exc:

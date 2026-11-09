@@ -7,12 +7,18 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, Body, HTTPExcept
 from sqlalchemy.orm import Session
 from backend.app.config import DEFAULT_REVIEW_DATE
 from backend.app.models import get_db, AssetModel, FindingModel, append_audit_event
-from backend.app.schemas.schemas import SubmissionCreateSchema
+from backend.app.schemas.schemas import (
+    SubmissionCreateSchema,
+    RegulatoryDisclosureApplySchema,
+    SafeZoneAuditRequestSchema,
+)
 from backend.app.seed import get_rules_as_dicts, get_facts_as_dicts, load_json_data
 from backend.app.engine.ingestion import ingest_document_bytes
 from backend.app.engine.retrieval import parse_iso_date
 from backend.app.engine.pipeline import run_full_verification_pipeline
 from backend.app.engine.vision_auditor import audit_image_bytes, generate_test_banner_png
+from backend.app.engine.layout_safezone import audit_logo_safe_zone, generate_compliance_certificate
+from backend.app.engine.regulatory_matrix import inject_disclosure_into_text
 from backend.app.api.workflow import _recompute_cumulative_working_copy
 
 router = APIRouter(prefix="/api/submissions", tags=["Submissions & Verification"])
@@ -20,7 +26,8 @@ router = APIRouter(prefix="/api/submissions", tags=["Submissions & Verification"
 
 def _serialize_asset(asset: AssetModel, findings: list) -> dict:
     has_custom_edit = any(getattr(f, "creator_action", "") == "EDIT" for f in findings)
-    effective_current = asset.current_content if has_custom_edit else _recompute_cumulative_working_copy(asset, findings)
+    has_disclosure_applied = any(getattr(f, "rule_id", "").startswith("REG-") and getattr(f, "creator_action", "") == "ACCEPT" for f in findings)
+    effective_current = asset.current_content if (has_custom_edit or has_disclosure_applied) else _recompute_cumulative_working_copy(asset, findings)
     return {
         "asset_id": asset.asset_id,
         "tenant": asset.tenant,
@@ -33,6 +40,7 @@ def _serialize_asset(asset: AssetModel, findings: list) -> dict:
         "must_keep_points": json.loads(asset.must_keep_points_json or "[]"),
         "origin": asset.origin,
         "channel": asset.channel,
+        "jurisdiction": getattr(asset, "jurisdiction", "US") or "US",
         "status": asset.status,
         "assigned_role": asset.assigned_role,
         "overall_verdict": asset.overall_verdict,
@@ -230,6 +238,7 @@ def create_submission(
         must_keep_points=req.must_keep_points,
         origin=req.origin,
         channel=req.channel,
+        jurisdiction=getattr(req, "jurisdiction", "US"),
         review_date=rev_date,
     )
 
@@ -287,6 +296,7 @@ def create_submission(
             must_keep_points_json=json.dumps(req.must_keep_points),
             origin=req.origin,
             channel=req.channel,
+            jurisdiction=getattr(req, "jurisdiction", "US"),
             status=status_val,
             assigned_role=res["assigned_role"],
             overall_verdict=res["overall_verdict"],
@@ -373,6 +383,7 @@ async def upload_document_submission(
     must_keep_points: str = Form(""),
     origin: str = Form("employee"),
     channel: str = Form("web"),
+    jurisdiction: str = Form("US"),
     db: Session = Depends(get_db),
 ):
     """Ingests .txt, .md, .docx, .pdf, or .png/.jpg files and runs the full verification pipeline (§5.2 Layer 1)."""
@@ -388,6 +399,7 @@ async def upload_document_submission(
         must_keep_points=mk_list,
         origin=origin,
         channel=channel,
+        jurisdiction=jurisdiction,
     )
     created = create_submission(req=req, db=db)
     created["ingestion_metadata"] = ingested["metadata"]
@@ -397,8 +409,8 @@ async def upload_document_submission(
 @router.post("/visual-audit")
 def run_visual_and_contrast_audit(payload: dict = Body(default={})):
     """
-    Executes Improvement 3 (§4.5.3): Measured CIEDE2000 colour distance, OCR-box WCAG 2.1 contrast,
-    and logo aspect ratio check on either a generated sample graphic or uploaded base64 image.
+    Executes Improvement 3 (§4.5.3 & Round 3): Measured CIEDE2000 colour distance, OCR-box WCAG 2.1 contrast,
+    logo aspect ratio check, and pixel-level 0.5x logo safe-zone clearance auditor.
     """
     mode = payload.get("mode", "non_compliant_demo")
     custom_b64 = payload.get("image_base64", "")
@@ -414,6 +426,17 @@ def run_visual_and_contrast_audit(payload: dict = Body(default={})):
         )
         audit_res["preview_data_url"] = custom_b64 if custom_b64.startswith("data:") else f"data:image/png;base64,{raw_b64}"
         audit_res["banner_label"] = f"Custom Uploaded Banner: {custom_name}"
+        img_w = audit_res.get("width") or audit_res.get("image_dimensions", {}).get("width", 1200)
+        img_h = audit_res.get("height") or audit_res.get("image_dimensions", {}).get("height", 630)
+        t_boxes = audit_res.get("text_boxes") or audit_res.get("text_contrast_measurements", [])
+        sz = audit_logo_safe_zone(
+            image_width=img_w,
+            image_height=img_h,
+            logo_bbox={"x": 40, "y": 30, "width": 400, "height": 100},
+            text_boxes=t_boxes,
+            min_clearance_ratio=0.5,
+        )
+        audit_res["safe_zone_audit"] = sz
         return audit_res
     elif mode == "compliant_demo":
         png_bytes, meta = generate_test_banner_png(compliant=True)
@@ -423,6 +446,14 @@ def run_visual_and_contrast_audit(payload: dict = Body(default={})):
         )
         audit_res["preview_data_url"] = meta["base64_png"]
         audit_res["banner_label"] = "Compliant Northwind Navy & Royal Blue Banner (4.0:1 Logo, 13.84:1 Contrast)"
+        sz = audit_logo_safe_zone(
+            image_width=1200,
+            image_height=630,
+            logo_bbox={"x": 60, "y": 50, "width": 400, "height": 100},
+            text_boxes=[{"text": "Headline", "x": 60, "y": 230, "width": 800, "height": 80}],
+            min_clearance_ratio=0.5,
+        )
+        audit_res["safe_zone_audit"] = sz
         return audit_res
     else:
         png_bytes, meta = generate_test_banner_png(compliant=False)
@@ -432,4 +463,111 @@ def run_visual_and_contrast_audit(payload: dict = Body(default={})):
         )
         audit_res["preview_data_url"] = meta["base64_png"]
         audit_res["banner_label"] = "Non-Compliant Draft Banner (Off-Palette #FF4500, 1.72:1 Low-Contrast Text Box, 2.2:1 Stretched Logo)"
+        sz = audit_logo_safe_zone(
+            image_width=1200,
+            image_height=630,
+            logo_bbox={"x": 10, "y": 10, "width": 300, "height": 136},
+            text_boxes=[{"text": "Encroaching Subtitle", "x": 20, "y": 50, "width": 200, "height": 40}],
+            min_clearance_ratio=0.5,
+        )
+        audit_res["safe_zone_audit"] = sz
         return audit_res
+
+
+@router.post("/{asset_id}/apply-disclosure")
+def apply_regulatory_disclosure(
+    asset_id: str,
+    req: RegulatoryDisclosureApplySchema,
+    db: Session = Depends(get_db),
+):
+    """
+    Improvement 2 (§Round 3): Surgically injects/appends a compliant legal disclosure
+    without mutating the creator's headline copy.
+    """
+    import hashlib
+    asset = db.query(AssetModel).filter(AssetModel.asset_id == asset_id).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
+
+    content_to_update = asset.current_content or asset.normalized_content or asset.raw_content
+    updated_content = inject_disclosure_into_text(
+        original_text=content_to_update,
+        disclosure_text=req.disclosure_text,
+        placement=req.placement,
+    )
+    asset.current_content = updated_content
+    new_sha = hashlib.sha256(updated_content.encode("utf-8")).hexdigest()
+    asset.normalized_sha256 = new_sha
+
+    if req.rule_id:
+        fnd = db.query(FindingModel).filter(
+            FindingModel.asset_id == asset_id,
+            FindingModel.rule_id == req.rule_id,
+        ).first()
+        if fnd:
+            fnd.creator_action = "ACCEPT"
+            fnd.status = "ACCEPTED_FIX"
+
+    audit = append_audit_event(
+        db=db,
+        actor_name=req.actor_name,
+        actor_role=req.actor_role,
+        event_type="APPLY_REGULATORY_DISCLOSURE",
+        target_id=asset_id,
+        details={
+            "rule_id": req.rule_id,
+            "placement": req.placement,
+            "disclosure_text": req.disclosure_text,
+            "new_sha256": new_sha,
+        },
+    )
+    db.commit()
+
+    fnds = db.query(FindingModel).filter(FindingModel.asset_id == asset_id).all()
+    res = _serialize_asset(asset, fnds)
+    res["audit_block_hash"] = audit.block_hash
+    return res
+
+
+@router.get("/{asset_id}/certificate")
+def get_submission_certificate(
+    asset_id: str,
+    signer_name: str = "Nandha K",
+    signer_role: str = "Brand Admin",
+    db: Session = Depends(get_db),
+):
+    """
+    Improvement 3 (§Round 3): Generates a cryptographically signed Compliance Proof Certificate
+    with Merkle block verification, dual SHA-256 hashes, CIEDE2000 proof, and WCAG contrast check.
+    """
+    asset = db.query(AssetModel).filter(AssetModel.asset_id == asset_id).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
+
+    fnds = db.query(FindingModel).filter(FindingModel.asset_id == asset_id).all()
+    asset_dict = _serialize_asset(asset, fnds)
+    findings_dicts = [
+        {
+            "finding_id": f.finding_id,
+            "rule_id": f.rule_id,
+            "verdict_tier": f.verdict_tier,
+            "severity": f.verdict_tier,
+            "status": f.status,
+            "creator_action": f.creator_action,
+        }
+        for f in fnds
+    ]
+
+    receipt = asset_dict.get("receipt") or {}
+    jur = getattr(asset, "jurisdiction", "US") or "US"
+
+    cert = generate_compliance_certificate(
+        asset_dict=asset_dict,
+        findings=findings_dicts,
+        signer_name=signer_name,
+        signer_role=signer_role,
+        jurisdiction=jur,
+        ledger_block_id=receipt.get("audit_ledger_id", 1),
+        ledger_block_hash=receipt.get("audit_block_hash", ""),
+    )
+    return cert

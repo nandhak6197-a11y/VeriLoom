@@ -19,6 +19,7 @@ class AssetModel(Base):
     must_keep_points_json = Column(Text, default="[]")
     origin = Column(String(64), default="employee")  # employee, agency, ai_generated
     channel = Column(String(64), default="social")   # social, email, web, deck, ad
+    jurisdiction = Column(String(32), default="US")  # US, EU, UK, GLOBAL
     status = Column(String(64), default="SUBMITTED")  # SUBMITTED, NEEDS_CREATOR_RESPONSE, IN_MANAGER_REVIEW, ESCALATED_LEGAL, APPROVED, REJECTED
     assigned_role = Column(String(64), default="Brand Manager")  # Brand Manager or Authorised Reviewer
     overall_verdict = Column(String(64), default="PASS")  # PASS, ADVISORY, NEEDS_HUMAN, VIOLATION

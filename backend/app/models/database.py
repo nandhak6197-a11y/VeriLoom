@@ -15,7 +15,18 @@ if DATABASE_URL.startswith("sqlite"):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA journal_mode=WAL;")
         cursor.execute("PRAGMA foreign_keys=ON;")
-        cursor.close()
+        try:
+            cols_f = [r[1] for r in cursor.execute("PRAGMA table_info(facts)").fetchall()]
+            if cols_f and "provenance_hash" not in cols_f:
+                cursor.execute("ALTER TABLE facts ADD COLUMN provenance_hash VARCHAR(64) DEFAULT ''")
+            cols_a = [r[1] for r in cursor.execute("PRAGMA table_info(assets)").fetchall()]
+            if cols_a and "jurisdiction" not in cols_a:
+                cursor.execute("ALTER TABLE assets ADD COLUMN jurisdiction VARCHAR(32) DEFAULT 'US'")
+            dbapi_connection.commit()
+        except Exception:
+            pass
+        finally:
+            cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
