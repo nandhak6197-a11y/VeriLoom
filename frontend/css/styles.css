@@ -210,15 +210,16 @@ h1, h2, h3, h4, strong, b {
 }
 
 .top-header {
-  height: 60px;
+  height: 68px;
+  min-height: 68px;
   position: sticky;
   top: 0;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  background: rgba(8, 9, 13, 0.88);
+  padding: 0 32px;
+  background: rgba(8, 9, 13, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -237,11 +238,12 @@ h1, h2, h3, h4, strong, b {
   gap: 20px;
 }
 
-/* VeriLoom Brand Logo Squircle & Title (Codex Left Zone) */
+/* VeriLoom Brand Logo & Title with Generous Breathing Room */
 .brand-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  margin-right: 36px;
   flex-shrink: 0;
 }
 
@@ -303,10 +305,11 @@ h1, h2, h3, h4, strong, b {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+/* Center Tabs: No Outer Capsule Border, Pure Bolder/Brighter Typography on Active */
 .nav-pill-capsule {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -315,36 +318,61 @@ h1, h2, h3, h4, strong, b {
 }
 
 .nav-pill-capsule .tab-btn {
-  border-radius: 9999px !important;
-  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
   font-size: 13px !important;
-  color: rgba(255, 255, 255, 0.72) !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.6) !important;
   border: none !important;
   background: transparent !important;
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none !important;
 }
 
 .nav-pill-capsule .tab-btn:hover {
   color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  transform: none !important;
+  background: transparent !important;
+  transform: translateY(-1px);
 }
 
 .nav-pill-capsule .tab-btn[aria-selected="true"],
-.nav-pill-capsule .tab-btn.active {
-  background: rgba(255, 255, 255, 0.14) !important;
+.nav-pill-capsule .tab-btn.active,
+.tab-btn[aria-selected="true"],
+.tab-btn.active {
+  background: transparent !important;
+  border: none !important;
   color: #ffffff !important;
-  border-radius: 9999px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.6), 0 0 4px rgba(255, 255, 255, 0.8) !important;
   box-shadow: none !important;
+  transform: scale(1.04);
+}
+
+.nav-pill-capsule .tab-btn svg,
+.tab-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: rgba(255, 255, 255, 0.5) !important;
+  transition: stroke 0.2s ease, opacity 0.2s ease;
+  filter: none !important;
+  flex-shrink: 0;
 }
 
 .nav-pill-capsule .tab-btn:hover svg,
+.tab-btn:hover svg {
+  stroke: rgba(255, 255, 255, 0.85) !important;
+  filter: none !important;
+  transform: none !important;
+}
+
 .nav-pill-capsule .tab-btn[aria-selected="true"] svg,
 .nav-pill-capsule .tab-btn.active svg,
-.tab-btn:hover svg,
 .tab-btn[aria-selected="true"] svg,
 .tab-btn.active svg {
   stroke: #ffffff !important;
+  filter: none !important;
+  transform: none !important;
 }
 
 .top-nav {
@@ -377,33 +405,23 @@ h1, h2, h3, h4, strong, b {
               box-shadow 0.24s var(--ease-smooth);
 }
 
-.tab-btn svg {
-  width: 13px;
-  height: 13px;
-  stroke: var(--text-muted);
-  transition: stroke 0.24s var(--ease-smooth);
-  flex-shrink: 0;
-}
-
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
+  background: transparent !important;
+  color: #ffffff !important;
   transform: translateY(-1px);
 }
 
-.tab-btn:hover svg {
-  stroke: #ffffff !important;
-}
-
-.tab-btn[aria-selected="true"] {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
+.tab-btn[aria-selected="true"],
+.tab-btn.active {
+  background: transparent !important;
+  border: none !important;
+  border-color: transparent !important;
   color: #ffffff !important;
-  box-shadow: var(--shadow-sm);
-}
-
-.tab-btn[aria-selected="true"] svg {
-  stroke: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.6), 0 0 4px rgba(255, 255, 255, 0.8) !important;
+  box-shadow: none !important;
+  transform: scale(1.04);
 }
 
 /* Right-side Role & User Controls in Topbar */
@@ -468,13 +486,14 @@ body.mode-dev .simple-only-el {
   background: #0D0D0F;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
-  padding: 5px 12px;
+  padding: 4px 13px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 11.5px;
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: all 0.2s var(--ease-smooth);
@@ -486,11 +505,12 @@ body.mode-dev .simple-only-el {
 
 .top-control-pill label {
   font-family: var(--font-header);
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 400;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  margin-right: 2px;
 }
 
 .top-control-pill select,
@@ -499,24 +519,39 @@ body.mode-dev .simple-only-el {
   border: none;
   color: #ffffff;
   font-family: var(--font-header);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   outline: none;
   cursor: pointer;
 }
 
-.top-control-pill input {
-  width: 72px;
+.top-control-pill input,
+#actor-name-input {
+  width: 78px;
+  min-width: 74px;
+  max-width: 95px;
   cursor: text;
+  box-sizing: content-box;
+  padding: 0 4px 0 2px;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .user-avatar-pill {
-  padding: 4px 12px 4px 6px;
+  padding: 4px 14px 4px 6px;
+  height: 32px;
+  border-radius: 9999px !important;
+  gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .avatar-circle {
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -1766,6 +1801,8 @@ code {
   background: #0D0D0F !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 9999px !important;
+  height: 32px !important;
+  padding: 4px 13px !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
   transition: all 0.2s var(--ease-smooth);
 }

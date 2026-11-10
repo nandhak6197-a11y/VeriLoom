@@ -75,6 +75,12 @@ async function recompileSubmissionForJurisdiction(assetId, jurisdiction) {
 
 function updateAvatarInitials(nameStr) {
   const pill = document.getElementById("user-avatar-initials");
+  const nameInput = document.getElementById("actor-name-input");
+  if (nameInput) {
+    const rawVal = nameStr !== undefined ? nameStr : nameInput.value;
+    const charLen = String(rawVal || "Nandha K").length;
+    nameInput.style.width = Math.max(78, charLen * 9.5) + "px";
+  }
   if (!pill) return;
   const parts = String(nameStr || "Nandha K").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) {
@@ -329,14 +335,25 @@ function setButtonLoading(btnEl, loadingText, useDarkSpinner = false) {
 
 const pauseForVisualFeedback = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
+let statusBannerTimer = null;
 function showStatusMessage(msg, isError = false) {
   const banner = document.getElementById("status-banner");
   if (!banner) return;
+  if (statusBannerTimer) {
+    clearTimeout(statusBannerTimer);
+    statusBannerTimer = null;
+  }
   banner.classList.remove("hidden");
-  banner.style.borderLeftColor = isError ? "#ef4444" : "#E8D59E";
-  banner.style.background = isError ? "rgba(239, 68, 68, 0.14)" : "#333333";
+  banner.style.borderLeftColor = isError ? "#ef4444" : "rgba(255, 255, 255, 0.2)";
+  banner.style.background = isError ? "rgba(38, 14, 20, 0.95)" : "rgba(18, 19, 26, 0.95)";
   banner.style.color = isError ? "#fca5a5" : "#FFFFFF";
   banner.textContent = msg;
+
+  // Each and every pop-up automatically vanishes after 5 seconds
+  statusBannerTimer = setTimeout(() => {
+    banner.classList.add("hidden");
+    statusBannerTimer = null;
+  }, 5000);
 }
 
 function getActiveActor() {
