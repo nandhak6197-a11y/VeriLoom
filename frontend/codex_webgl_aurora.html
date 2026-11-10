@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenAI Codex Atmospheric Aurora Mesh Background</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #10132E;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      display: block;
+      pointer-events: none;
+    }
+    .hero-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      color: #ffffff;
+      user-select: none;
+    }
+    .icon-container {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), 0 0 35px rgba(255, 255, 255, 0.45);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .icon-container:hover {
+      transform: scale(1.05);
+    }
+    .icon-container svg {
+      width: 36px;
+      height: 36px;
+      color: #0d0d0d;
+    }
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+      margin-bottom: 16px;
+      color: #ffffff;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    }
+    p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: rgba(255, 255, 255, 0.88);
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      max-width: 640px;
+      line-height: 1.5;
+      margin-bottom: 32px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    }
+    .btn-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      background: #ffffff;
+      color: #0d0d0d;
+      padding: 14px 34px;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.25);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s, box-shadow 0.25s;
+    }
+    .btn-pill:hover {
+      transform: scale(1.035);
+      background: #f8fafc;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38), 0 0 30px rgba(255, 255, 255, 0.4);
+    }
+    .trust-footer {
+      position: absolute;
+      bottom: 40px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      opacity: 0.8;
+    }
+    .trust-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    .trust-badges {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 36px;
+      flex-wrap: wrap;
+    }
+    .trust-badge {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Full-Viewport WebGL Fragment Shader Canvas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Hero Overlay matching OpenAI Codex landing page -->
+  <main class="hero-container">
+    <div class="icon-container" title="OpenAI Codex">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </div>
+
+    <h1>Build anything with Codex</h1>
+    <p>Move faster, go further, and bring your biggest ideas to life.</p>
+    <button class="btn-pill">Download for Windows</button>
+
+    <div class="trust-footer">
+      <div class="trust-title">Trusted by top teams</div>
+      <div class="trust-badges">
+        <span class="trust-badge">NVIDIA</span>
+        <span class="trust-badge">CISCO</span>
+        <span class="trust-badge">SHOPIFY</span>
+        <span class="trust-badge">RAKUTEN</span>
+        <span class="trust-badge">ZENDESK</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('bg-canvas');
+      const gl = canvas.getContext('webgl', {
+        alpha: false,
+        depth: false,
+        stencil: false,
+        antialias: false,
+        powerPreference: 'high-performance'
+      });
+
+      if (!gl) {
+        console.error('WebGL is not supported by your browser.');
+        return;
+      }
+
+      // Vertex Shader
+      const vsSource = `
+        attribute vec2 a_position;
+        void main() {
+          gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+      `;
+
+      // Fragment Shader
+      const fsSource = `
+        precision highp float;
+        uniform vec2 u_resolution;
+        uniform float u_time;
+
+        // Hash function for procedural noise
+        float hash(vec2 p) {
+          p = 50.0 * fract(p * 0.3183099 + vec2(0.71, 0.113));
+          return -1.0 + 2.0 * fract(p.x * p.y * (p.x + p.y));
+        }
+
+        // 2D Value Noise with Quintic Hermite Interpolation: u = f^3 * (f * (f * 6.0 - 15.0) + 10.0)
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+          return mix(
+            mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+            mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+            u.y
+          );
+        }
+
+        // 5-Octave Fractal Brownian Motion with Rotation Matrix
+        const mat2 m = mat2(0.80, -0.60, 0.60, 0.80);
+        float fbm(vec2 st) {
+          float v = 0.0;
+          float a = 0.5;
+          vec2 shift = vec2(100.0);
+          for (int i = 0; i < 5; ++i) {
+            v += a * noise(st);
+            st = m * st * 2.02 + shift;
+            a *= 0.5;
+          }
+          return v;
+        }
+
+        void main() {
+          // 1. Coordinates: Normalize & aspect-correct
+          vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+          vec2 p = uv;
+          p.x *= u_resolution.x / u_resolution.y;
+
+          // Diagonal tilt and stretch for cirrus/cloud streaks from top-left to bottom-right
+          p = mat2(0.86, -0.50, 0.50, 0.86) * p;
+          p *= vec2(1.0, 1.8);
+          p *= 1.35;
+
+          // 2. Procedural Noise & 2-Stage Domain Warping
+          float t = u_time * 0.06;
+          vec2 q = vec2(
+            fbm(p + vec2(0.0, 0.0) + t * 0.4),
+            fbm(p + vec2(5.2, 1.3) - t * 0.3)
+          );
+          vec2 r = vec2(
+            fbm(p + 2.2 * q + vec2(1.7, 9.2) + t * 0.5),
+            fbm(p + 2.2 * q + vec2(8.3, 2.8) + t * 0.25)
+          );
+          float f = fbm(p + 1.8 * r);
+
+          // 3. Exact Pre-Computed Color Vectors
+          vec3 colSkyHighlight   = vec3(0.737, 0.808, 0.941); // #BCCEF0
+          vec3 colPeriwinkle     = vec3(0.565, 0.678, 0.894); // #90ADE4
+          vec3 colSlateBlue      = vec3(0.392, 0.471, 0.824); // #6478D2
+          vec3 colElectricIndigo = vec3(0.275, 0.298, 0.910); // #464CE8
+          vec3 colDeepViolet     = vec3(0.180, 0.176, 0.451); // #2E2D73
+          vec3 colMidnightNavy   = vec3(0.063, 0.075, 0.180); // #10132E
+
+          // 4. Spatial Composition & Blending
+          // Base diagonal blend: Periwinkle (top-left) to Electric Indigo (mid-right) to Deep Violet (bottom)
+          float diag = clamp((uv.x * 0.6 + (1.0 - uv.y) * 0.8), 0.0, 1.0);
+          vec3 col = mix(colPeriwinkle, colElectricIndigo, smoothstep(0.15, 0.85, diag));
+          col = mix(col, colDeepViolet, smoothstep(0.35, 0.95, 1.0 - uv.y));
+
+          // Layer warped cloud texture (f and q length)
+          float cloudWeight = smoothstep(0.2, 0.9, uv.y * (1.2 - uv.x * 0.5));
+          float cloudDetail = smoothstep(-0.2, 0.6, f);
+          col = mix(col, colSlateBlue, cloudWeight * cloudDetail * 0.65);
+          col = mix(col, colSkyHighlight, cloudWeight * smoothstep(0.1, 0.7, f + length(q) * 0.4) * 0.78);
+
+          // Drifting radial mask on the right side boosted by q for Electric Indigo
+          float rightBlob = smoothstep(0.85, 0.1, length(uv - vec2(0.78, 0.55)));
+          col = mix(col, colElectricIndigo, rightBlob * (0.65 + 0.35 * length(q)));
+
+          // Smooth bottom-left and bottom-edge shadow sink into Midnight Navy
+          float bottomShadow = smoothstep(0.65, 0.0, uv.y) * 0.88;
+          float leftBottomCorner = smoothstep(0.72, 0.0, length(uv - vec2(0.05, 0.0)));
+          col = mix(col, colMidnightNavy, clamp(bottomShadow + leftBottomCorner * 0.5, 0.0, 1.0));
+
+          // 5. Film Grain / Anti-Banding Screen-Space Dither
+          float grain = (fract(sin(dot(gl_FragCoord.xy + fract(u_time), vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.028;
+          col += grain;
+          col = clamp(col, 0.0, 1.0);
+
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `;
+
+      function compileShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error('Shader compilation error: ', gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+          return null;
+        }
+        return shader;
+      }
+
+      const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+      if (!vertexShader || !fragmentShader) return;
+
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program link error: ', gl.getProgramInfoLog(program));
+        return;
+      }
+
+      gl.useProgram(program);
+
+      // Full screen quad buffer
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+        -1,  1,
+         1, -1,
+         1,  1,
+      ]), gl.STATIC_DRAW);
+
+      const positionLocation = gl.getAttribLocation(program, 'a_position');
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+      const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+      const timeLocation = gl.getUniformLocation(program, 'u_time');
+
+      let width = 0;
+      let height = 0;
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        width = Math.floor(window.innerWidth * dpr);
+        height = Math.floor(window.innerHeight * dpr);
+
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+          gl.viewport(0, 0, width, height);
+        }
+      }
+
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+
+      let startTime = performance.now();
+      let animId = null;
+      let isPaused = false;
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          isPaused = true;
+          if (animId) cancelAnimationFrame(animId);
+        } else {
+          isPaused = false;
+          startTime = performance.now() - pausedOffset;
+          render();
+        }
+      });
+
+      let pausedOffset = 0;
+
+      function render() {
+        if (isPaused) return;
+
+        const currentTime = (performance.now() - startTime) * 0.001;
+        gl.uniform2f(resolutionLocation, width, height);
+        gl.uniform1f(timeLocation, currentTime);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        animId = requestAnimationFrame(render);
+      }
+
+      render();
+    })();
+  </script>
+</body>
+</html>
