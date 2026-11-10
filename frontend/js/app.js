@@ -456,7 +456,8 @@ function renderSubmissionsQueueTable() {
   for (const item of filtered) {
     const cleanTitle = escapeHtml(item.title);
     const isSelected = CURRENT_ASSET && CURRENT_ASSET.asset_id === item.asset_id;
-    html += `<tr style="${isSelected ? "background: rgba(247, 230, 202, 0.07);" : ""}">
+    const selectedStyle = isSelected ? "background: rgba(70, 76, 232, 0.12); box-shadow: inset 3px 0 0 #6478D2;" : "";
+    html += `<tr class="${isSelected ? "row-selected-codex" : ""}" style="${selectedStyle}">
       <td style="white-space:nowrap;"><strong>${escapeHtml(item.asset_id)}</strong></td>
       <td>${cleanTitle}</td>
       <td style="white-space:nowrap;font-size:0.84rem;color:var(--text-muted);">${escapeHtml(formatOriginLabel(item.origin))} &bull; ${escapeHtml(formatChannelLabel(item.channel))}</td>
@@ -704,7 +705,7 @@ function renderActiveSubmission(asset) {
         `<span class="dev-only-el"> &bull; Fingerprint: <code>${escapeHtml((asset.approved_sha256 || "").slice(0, 20))}...</code></span>`;
     } else if (isCreatorRole) {
       routeNote.innerHTML =
-        `<div class="rbac-lock-notice">&#128274; Role Lock: Creators cannot self-approve submissions (Routed to <strong>${escapeHtml(asset.assigned_role)}</strong>).</div>` +
+        `<div class="rbac-lock-notice"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;display:inline-block;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Role Lock: Creators cannot self-approve submissions (Routed to <strong>${escapeHtml(asset.assigned_role)}</strong>).</div>` +
         `<div style="margin-top:6px;"><button type="button" class="btn btn-primary btn-sm" style="padding:4px 11px;font-size:0.76rem;" onclick="switchRoleAndApprove()">Switch to Legal Reviewer &amp; Approve (1-Click Demo)</button></div>`;
     } else if (isManagerRole && hasInjection) {
       routeNote.innerHTML =
@@ -878,7 +879,7 @@ function renderActiveSubmission(asset) {
                 Override Flag
               </button>
             </div>
-            ${isCreatorRole ? `<div class="rbac-lock-notice">&#128274; Switch Role to Brand Manager or Legal Reviewer to grant waivers</div>` : ""}
+            ${isCreatorRole ? `<div class="rbac-lock-notice"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;display:inline-block;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Switch Role to Brand Manager or Legal Reviewer to grant waivers</div>` : ""}
           </div>
         </div>
       </div>`;

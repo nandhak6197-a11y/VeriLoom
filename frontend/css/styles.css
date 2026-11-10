@@ -210,35 +210,64 @@ h1, h2, h3, h4, strong, b {
 }
 
 .top-header {
-  background: linear-gradient(to bottom, rgba(7, 11, 20, 0.88), rgba(7, 11, 20, 0.65));
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+  height: 60px;
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  background: rgba(13, 14, 20, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   font-family: var(--font-header);
-  transition: all 0.4s var(--ease-smooth);
+  transition: all 0.3s var(--ease-smooth);
 }
 
 .top-header-inner {
   max-width: 100%;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 12px;
 }
 
-/* VeriLoom Brand Title — Styled in Exact "Claude" Serif Font from Screenshot 3 */
+/* VeriLoom Brand Logo Squircle & Title (Codex Left Zone) */
 .brand-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex-shrink: 0;
+}
+
+.header-squircle-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.header-squircle-logo svg {
+  width: 16px;
+  height: 16px;
+}
+
+.header-logo-text {
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  font-family: var(--font-header);
 }
 
 .brand-header h1 {
@@ -250,6 +279,45 @@ h1, h2, h3, h4, strong, b {
   letter-spacing: -0.025em;
   line-height: 1.1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.nav-pill-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 3px;
+}
+
+.nav-pill-capsule .tab-btn {
+  border-radius: 9999px !important;
+  padding: 6px 14px !important;
+  font-size: 12.5px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  background: transparent !important;
+  transition: all 0.2s ease;
+}
+
+.nav-pill-capsule .tab-btn:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: none !important;
+}
+
+.nav-pill-capsule .tab-btn[aria-selected="true"],
+.nav-pill-capsule .tab-btn.active {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+
+.nav-pill-capsule .tab-btn[aria-selected="true"] svg,
+.nav-pill-capsule .tab-btn.active svg {
+  stroke: #ffffff !important;
 }
 
 .top-nav {
@@ -370,58 +438,64 @@ body.mode-dev .simple-only-el {
 }
 
 .top-control-pill {
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 3px 7px;
+  background: #0D0D0F;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  padding: 5px 12px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   white-space: nowrap;
   flex-shrink: 0;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
-  transition: border-color 0.22s var(--ease-smooth);
+  font-size: 12px;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s var(--ease-smooth);
 }
 
 .top-control-pill:hover {
-  border-color: var(--accent-taupe);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .top-control-pill label {
   font-family: var(--font-header);
-  font-size: 0.68rem;
-  color: var(--text-muted);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
   font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .top-control-pill select,
 .top-control-pill input {
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: #ffffff;
   font-family: var(--font-header);
-  font-size: 0.75rem;
-  font-weight: 400;
+  font-size: 12px;
+  font-weight: 500;
   outline: none;
+  cursor: pointer;
 }
 
 .top-control-pill input {
-  width: 62px;
+  width: 72px;
+  cursor: text;
 }
 
 .user-avatar-pill {
-  padding: 2px 7px 2px 3px;
+  padding: 4px 12px 4px 6px;
 }
 
 .avatar-circle {
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(247, 230, 202, 0.22), rgba(232, 213, 158, 0.35));
-  border: 1px solid rgba(232, 213, 158, 0.55);
-  color: var(--accent-cream);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
   font-family: var(--font-header);
-  font-size: 0.66rem;
+  font-size: 10px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -430,8 +504,8 @@ body.mode-dev .simple-only-el {
 }
 
 .top-control-pill select option {
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: #111216;
+  color: #ffffff;
 }
 
 /* ============================================================================
@@ -1885,6 +1959,291 @@ code {
   background: var(--bg-card-elevated);
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+/* ============================================================================
+   OpenAI Codex Desktop & Window System Architecture
+   ============================================================================ */
+
+/* Floating Bottom-Right Toast Status Notice */
+#status-banner {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  background: rgba(20, 21, 26, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 9999px !important;
+  padding: 8px 18px !important;
+  font-size: 12px !important;
+  color: #ffffff !important;
+  z-index: 1000 !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInToast {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Trust Bar Monochrome Wordmarks */
+.hero-trust-bar-codex {
+  margin-top: 36px;
+  text-align: center;
+}
+
+.trust-subtitle-codex {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 14px;
+}
+
+.trust-strip-monochrome {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.85;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  flex-wrap: wrap;
+}
+
+.trust-mono-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.trust-mono-item:hover {
+  opacity: 1;
+}
+
+/* Unified macOS Application Window Frame */
+.macos-window-frame {
+  max-width: 1280px;
+  margin: 0 auto 40px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 16px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+}
+
+.macos-window-chrome {
+  height: 44px;
+  background: #1A1B21;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.macos-chrome-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.macos-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.macos-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.macos-dot-close { background: #FF5F56; }
+.macos-dot-min { background: #FFBD2E; }
+.macos-dot-zoom { background: #27C93F; }
+
+.macos-chrome-badge {
+  font-size: 10.5px !important;
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+  letter-spacing: 0.04em;
+}
+
+.macos-chrome-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.macos-chrome-center .quick-guide-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.macos-chrome-center .guide-step-card {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 7px;
+  box-shadow: none;
+}
+
+.macos-chrome-center .guide-step-num {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+.macos-chrome-center .guide-step-text strong {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.macos-chrome-center .guide-step-text span {
+  display: none;
+}
+
+.macos-chrome-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.macos-window-body {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  min-height: 520px;
+}
+
+@media (max-width: 960px) {
+  .macos-window-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.macos-col-composer {
+  background: #111216;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 22px;
+}
+
+.composer-unified-box {
+  background: #181920;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.composer-textarea {
+  width: 100%;
+  min-height: 110px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 13.5px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+}
+
+.btn-verify-fullwidth {
+  width: 100%;
+  background: #ffffff !important;
+  color: #0D0D0F !important;
+  border-radius: 9999px !important;
+  padding: 12px 20px !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-verify-fullwidth:hover {
+  background: #f1f3f9 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.macos-col-report {
+  background: #15161C;
+  padding: 24px;
+}
+
+.macos-window-footer {
+  background: #0E0F13;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+/* Findings & Diffs within Code-Review Container */
+.diff-box {
+  background: #0D0E12 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.diff-box del, .diff-del, .diff-removed {
+  background: rgba(244, 63, 94, 0.2) !important;
+  color: #fda4af !important;
+  text-decoration: line-through !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+}
+
+.diff-box ins, .diff-ins, .diff-added {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #86efac !important;
+  text-decoration: none !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+}
+
+/* Submissions Queue Table Toolbar & Row Highlighting */
+.queue-header-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.row-selected-codex {
+  background: rgba(70, 76, 232, 0.12) !important;
+  box-shadow: inset 3px 0 0 #6478D2 !important;
 }
 
 .hidden {
