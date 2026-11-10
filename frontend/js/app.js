@@ -670,7 +670,7 @@ function renderActiveSubmission(asset) {
 
   if (isApproved) {
     if (btnDownloadCert) btnDownloadCert.classList.remove("hidden");
-    if (btnDownloadCertOld) btnDownloadCertOld.classList.remove("hidden");
+    if (btnDownloadCertOld) btnDownloadCertOld.classList.add("hidden");
   } else {
     if (btnDownloadCert) btnDownloadCert.classList.add("hidden");
     if (btnDownloadCertOld) btnDownloadCertOld.classList.add("hidden");
@@ -1949,13 +1949,13 @@ async function loadInsightsAndTelemetry(btnEl = null) {
 
     const hBox = document.getElementById("hypotheses-table-box");
     if (hBox) {
-      let hHtml = '<table class="data-table"><thead><tr><th>ID</th><th>Hypothesis (Section 7.4)</th><th>Target</th><th>Measured Round 2 Result</th><th>Status</th></tr></thead><tbody>';
+      let hHtml = '<table class="data-table"><thead><tr><th style="white-space:nowrap;">ID</th><th>Hypothesis (Section 7.4)</th><th style="white-space:nowrap;">Target</th><th style="white-space:nowrap;">Measured Round 2 Result</th><th style="white-space:nowrap;">Status</th></tr></thead><tbody>';
       for (const h of data.hypotheses || []) {
         hHtml += `<tr>
           <td style="white-space:nowrap;"><strong>${escapeHtml(h.id)}</strong></td>
           <td>${escapeHtml(h.hypothesis)}</td>
           <td style="white-space:nowrap;"><code>${escapeHtml(h.target)}</code></td>
-          <td><strong>${escapeHtml(h.measured)}</strong></td>
+          <td style="white-space:nowrap;"><strong>${escapeHtml(h.measured)}</strong></td>
           <td style="white-space:nowrap;"><span class="tier-badge tier-pass">${escapeHtml(h.status)}</span></td>
         </tr>`;
       }
@@ -1965,7 +1965,7 @@ async function loadInsightsAndTelemetry(btnEl = null) {
 
     const rBox = document.getElementById("ror-telemetry-table-box");
     if (rBox && data.ror_report) {
-      let rHtml = '<table class="data-table"><thead><tr><th>Rule ID</th><th>Total Flags</th><th>Overridden / Dismissed</th><th>ROR</th><th>Diagnostic Classification</th><th>Actionable Recommendation</th></tr></thead><tbody>';
+      let rHtml = '<table class="data-table"><thead><tr><th style="width:200px;">Rule ID &amp; Clause</th><th style="text-align:center;white-space:nowrap;width:80px;">Total Flags</th><th style="text-align:center;white-space:nowrap;width:110px;">Overridden</th><th style="text-align:center;white-space:nowrap;width:75px;">ROR</th><th style="white-space:nowrap;width:170px;">Diagnostic Classification</th><th style="min-width:240px;">Actionable Recommendation</th></tr></thead><tbody>';
       for (const r of data.ror_report.rules_telemetry || []) {
         if (r.total_flags === 0) continue;
         let diagBadge = '<span class="tier-badge tier-pass">Healthy Rule</span>';
@@ -1984,12 +1984,12 @@ async function loadInsightsAndTelemetry(btnEl = null) {
           recHtml = `<span style="color:var(--text-secondary);"><strong>Rule is 100% accurate</strong> (0% reviewer override across ${r.total_flags} flags). Recurring initial violations indicate an opportunity for creator pre-flight templates.</span>`;
         }
         rHtml += `<tr>
-          <td style="white-space:nowrap;"><strong>${escapeHtml(r.rule_id)}</strong><br/><span style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(r.source_clause)}</span></td>
-          <td>${r.total_flags}</td>
-          <td>${r.dismissed_or_overridden}</td>
-          <td><strong>${(r.ror * 100).toFixed(1)}%</strong></td>
+          <td><strong style="white-space:nowrap;">${escapeHtml(r.rule_id)}</strong><br/><span style="font-size:0.75rem;color:var(--text-muted);display:block;max-width:190px;line-height:1.35;word-break:break-word;">${escapeHtml(r.source_clause)}</span></td>
+          <td style="text-align:center;white-space:nowrap;">${r.total_flags}</td>
+          <td style="text-align:center;white-space:nowrap;">${r.dismissed_or_overridden}</td>
+          <td style="text-align:center;white-space:nowrap;"><strong style="font-size:0.92rem;color:${r.ror > 0.45 ? '#fca5a5' : '#86efac'};">${(r.ror * 100).toFixed(1)}%</strong></td>
           <td style="white-space:nowrap;">${diagBadge}</td>
-          <td>${recHtml}</td>
+          <td style="line-height:1.45;">${recHtml}</td>
         </tr>`;
       }
       rHtml += "</tbody></table>";

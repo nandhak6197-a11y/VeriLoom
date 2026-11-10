@@ -218,9 +218,9 @@ h1, h2, h3, h4, strong, b {
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  background: rgba(13, 14, 20, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(8, 9, 13, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   font-family: var(--font-header);
   transition: all 0.3s var(--ease-smooth);
@@ -234,7 +234,7 @@ h1, h2, h3, h4, strong, b {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 20px;
 }
 
 /* VeriLoom Brand Logo Squircle & Title (Codex Left Zone) */
@@ -243,6 +243,28 @@ h1, h2, h3, h4, strong, b {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+}
+
+.header-bot-logo {
+  width: 28px;
+  height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.header-bot-img {
+  width: 28px;
+  height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
 }
 
 .header-squircle-logo {
@@ -284,18 +306,19 @@ h1, h2, h3, h4, strong, b {
 .nav-pill-capsule {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  padding: 3px;
+  gap: 8px;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .nav-pill-capsule .tab-btn {
   border-radius: 9999px !important;
   padding: 6px 14px !important;
-  font-size: 12.5px !important;
-  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.72) !important;
   border: none !important;
   background: transparent !important;
   transition: all 0.2s ease;
@@ -309,14 +332,18 @@ h1, h2, h3, h4, strong, b {
 
 .nav-pill-capsule .tab-btn[aria-selected="true"],
 .nav-pill-capsule .tab-btn.active {
-  background: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
 }
 
+.nav-pill-capsule .tab-btn:hover svg,
 .nav-pill-capsule .tab-btn[aria-selected="true"] svg,
-.nav-pill-capsule .tab-btn.active svg {
+.nav-pill-capsule .tab-btn.active svg,
+.tab-btn:hover svg,
+.tab-btn[aria-selected="true"] svg,
+.tab-btn.active svg {
   stroke: #ffffff !important;
 }
 
@@ -365,18 +392,18 @@ h1, h2, h3, h4, strong, b {
 }
 
 .tab-btn:hover svg {
-  stroke: var(--accent-cream);
+  stroke: #ffffff !important;
 }
 
 .tab-btn[aria-selected="true"] {
-  background: var(--bg-card-elevated);
-  border-color: rgba(232, 213, 158, 0.38);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
   box-shadow: var(--shadow-sm);
 }
 
 .tab-btn[aria-selected="true"] svg {
-  stroke: var(--accent-champagne);
+  stroke: #ffffff !important;
 }
 
 /* Right-side Role & User Controls in Topbar */
@@ -384,7 +411,7 @@ h1, h2, h3, h4, strong, b {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   font-family: var(--font-header);
   flex-shrink: 0;
 }
@@ -535,27 +562,47 @@ body.mode-dev .simple-only-el {
   padding-top: 10px;
 }
 
+.hero-bot-emblem {
+  width: 60px;
+  height: 60px;
+  max-width: 60px;
+  max-height: 60px;
+  margin: 0 auto 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.hero-bot-img {
+  width: 60px;
+  height: 60px;
+  max-width: 60px;
+  max-height: 60px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-bot-emblem:hover .hero-bot-img {
+  transform: scale(1.08) translateY(-2px);
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 24px rgba(56, 189, 248, 0.6));
+}
+
 .hero-codex-squircle {
   width: 60px;
   height: 60px;
-  border-radius: 18px;
-  background: #ffffff;
   margin: 0 auto 22px auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.45), 0 0 30px rgba(255, 255, 255, 0.35);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
-
-.hero-codex-squircle:hover {
-  transform: scale(1.06) rotate(2deg);
-  box-shadow: 0 20px 42px -4px rgba(0, 0, 0, 0.55), 0 0 40px rgba(255, 255, 255, 0.5);
-}
-
-.hero-codex-squircle svg {
-  width: 34px;
-  height: 34px;
   color: #000000;
 }
 
@@ -569,15 +616,16 @@ body.mode-dev .simple-only-el {
   line-height: 1.08 !important;
   text-align: center;
   text-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+  font-style: normal !important;
 }
 
 .hero-title-codex em {
-  font-family: var(--font-claude-brand), 'Newsreader', Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  color: #FFFFFF;
-  letter-spacing: -0.015em;
-  padding: 0 2px;
+  font-family: var(--font-header) !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  color: #FFFFFF !important;
+  letter-spacing: -0.035em !important;
+  padding: 0;
 }
 
 .hero-haute-badge {
@@ -804,30 +852,30 @@ body.mode-dev .simple-only-el {
 }
 
 .signoff-card {
-  background: var(--bg-input);
-  border: 1px solid var(--border-card);
+  background: #111217;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 16px 20px;
   margin-top: 20px;
   margin-bottom: 18px;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 12px;
   box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .signoff-info {
-  flex: 1;
-  min-width: 240px;
+  width: 100%;
 }
 
 .signoff-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  flex-shrink: 0;
+  align-items: center;
+  width: 100%;
 }
 
 .finding-actions-split {
@@ -1715,38 +1763,45 @@ code {
    Round 3 Production Innovations: Obsidian & Emerald UI/UX Elements
    ============================================================================ */
 .jurisdiction-pill {
-  border-color: rgba(245, 158, 11, 0.4) !important;
-  background: rgba(15, 23, 42, 0.95) !important;
-  transition: border-color 0.24s var(--ease-smooth), box-shadow 0.24s var(--ease-smooth);
+  background: #0D0D0F !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+  transition: all 0.2s var(--ease-smooth);
 }
 
 .jurisdiction-pill:hover,
 .jurisdiction-pill:focus-within {
-  border-color: var(--accent-amber) !important;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  box-shadow: none !important;
 }
 
 .jurisdiction-pill label {
-  color: var(--accent-amber-light) !important;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-family: var(--font-header) !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
 }
 
 .jurisdiction-pill select,
 .top-jurisdiction-select {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  padding: 0 4px;
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-family: var(--font-header) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  padding: 0 !important;
 }
 
 .jurisdiction-pill select option,
 .top-jurisdiction-select option {
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: #111216 !important;
+  color: #ffffff !important;
 }
 
 /* Step 2 1-Click Compliant Legal Disclosure Card */
@@ -2201,13 +2256,19 @@ code {
 }
 
 .macos-window-footer {
-  background: #0E0F13;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 12px 22px;
+  background: #0E0F13 !important;
+  border: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-left: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 12px 24px !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12.5px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Findings & Diffs within Code-Review Container */
