@@ -61,7 +61,9 @@ def ingest_document_bytes(filename: str, file_bytes: bytes) -> Dict[str, Any]:
             extracted_text = "\n".join(paragraphs)
             metadata["paragraph_count"] = len(paragraphs)
         except Exception as exc:
-            extracted_text = file_bytes.decode("utf-8", errors="replace")
+            # Fallback for corrupted/unparseable PDF binaries: extract printable strings without binary noise
+            clean_strs = re.findall(r"[A-Za-z0-9 ,.'\"\-:;!?()]{4,}", file_bytes.decode("latin-1", errors="ignore"))
+            extracted_text = " ".join(clean_strs)[:10000]
             metadata["parse_warning"] = str(exc)
 
     elif ext == "pdf":
@@ -94,7 +96,9 @@ def ingest_document_bytes(filename: str, file_bytes: bytes) -> Dict[str, Any]:
             metadata["page_count"] = len(doc)
             metadata["embedded_images"] = max(image_count, metadata.get("total_images", 0))
         except Exception as exc:
-            extracted_text = file_bytes.decode("utf-8", errors="replace")
+            # Fallback for corrupted/unparseable PDF binaries: extract printable strings without binary noise
+            clean_strs = re.findall(r"[A-Za-z0-9 ,.'\"\-:;!?()]{4,}", file_bytes.decode("latin-1", errors="ignore"))
+            extracted_text = " ".join(clean_strs)[:10000]
             metadata["parse_warning"] = str(exc)
 
     elif ext in ("png", "jpg", "jpeg"):
