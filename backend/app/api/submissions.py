@@ -211,6 +211,8 @@ def reset_demo_submissions_queue(db: Session = Depends(get_db)):
             db.query(FindingModel).filter(FindingModel.asset_id == a.asset_id).delete()
             db.delete(a)
             removed += 1
+    from backend.app.api.insights import restore_tampered_chain
+    restore_tampered_chain(db)
     db.commit()
     return {"status": "ok", "removed_duplicates": removed}
 

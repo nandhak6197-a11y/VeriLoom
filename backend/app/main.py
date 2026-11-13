@@ -18,6 +18,8 @@ def init_db_and_seed() -> None:
     db = SessionLocal()
     try:
         seed_initial_data(db)
+        from backend.app.api.insights import restore_tampered_chain
+        restore_tampered_chain(db)
     finally:
         db.close()
 
