@@ -1,4 +1,4 @@
-/* VeriLoom Round 3 Production Reviewer Workbench Controller (v24.0) */
+/* VeriLoom Round 2 MVP Reviewer Workbench Controller (v18.0) */
 let DEMO_PRESETS = [];
 let CURRENT_ASSET = null;
 let ALL_SUBMISSIONS = [];
@@ -7,80 +7,11 @@ let ALL_FACTS_DATA = null;
 let FACT_FILTER = "all"; // "all" | "active" | "expired"
 let LAST_VISUAL_DATA = null;
 let LAST_VISUAL_IMG = null;
-let MUST_KEEP_TAGS = ["12 Nov", "webinar"];
+let MUST_KEEP_TAGS = [];
 let DETAIL_MODE = "simple"; // "simple" (Simple View) | "dev" (Audit Details)
-let CURRENT_JURISDICTION = "US"; // "US" | "EU" | "UK" | "GLOBAL"
-let SHOW_SAFEZONE_OVERLAY = true;
-let FACT_VIEW_MODE = "table"; // "table" | "graph"
-let KNOWLEDGE_GRAPH_DATA = null;
-let ACTIVE_DISCLOSURE_DATA = null;
-
-function onJurisdictionChanged() {
-  const sel = document.getElementById("active-jurisdiction-select");
-  if (!sel) return;
-  CURRENT_JURISDICTION = sel.value;
-  
-  const jurNames = {
-    US: "United States (FTC 16 CFR §255 Endorsement Guides)",
-    EU: "European Union (EU AI Act Article 50 & EAA)",
-    UK: "United Kingdom (CMA & ASA / CAP Code)",
-    GLOBAL: "Global Baseline Harmonized Standards",
-  };
-  showStatusMessage(`Jurisdiction switched to ${jurNames[CURRENT_JURISDICTION] || CURRENT_JURISDICTION}. Re-compiling regulatory compliance rules...`);
-
-  if (CURRENT_ASSET) {
-    recompileSubmissionForJurisdiction(CURRENT_ASSET.asset_id, CURRENT_JURISDICTION);
-  }
-}
-
-function onGlobalJurisdictionChanged(val) {
-  if (val) {
-    CURRENT_JURISDICTION = val;
-    const sel = document.getElementById("active-jurisdiction-select");
-    if (sel && sel.value !== val) sel.value = val;
-  }
-  onJurisdictionChanged();
-}
-
-async function recompileSubmissionForJurisdiction(assetId, jurisdiction) {
-  if (!CURRENT_ASSET) return;
-  try {
-    const actor = getActiveActor();
-    const res = await fetch("/api/submissions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: CURRENT_ASSET.title || "Regulatory Re-Compilation",
-        content: CURRENT_ASSET.current_content || CURRENT_ASSET.raw_content,
-        creator_intent: CURRENT_ASSET.creator_intent || "Evaluate copy",
-        must_keep_points: CURRENT_ASSET.must_keep_points || [],
-        origin: CURRENT_ASSET.origin || "ai_generated",
-        channel: CURRENT_ASSET.channel || "social",
-        jurisdiction: jurisdiction,
-        actor_name: actor.name,
-        actor_role: actor.role,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      CURRENT_ASSET = data;
-      renderActiveSubmission(data);
-      await loadSubmissionsQueue(data.asset_id);
-      showStatusMessage(`Dynamic regulatory re-compilation complete for ${jurisdiction}. Verdict: ${data.overall_verdict}.`);
-    }
-  } catch (err) {
-    console.error("Jurisdiction re-compilation failed:", err);
-  }
-}
 
 function updateAvatarInitials(nameStr) {
   const pill = document.getElementById("user-avatar-initials");
-  const nameInput = document.getElementById("actor-name-input");
-  if (nameInput) {
-    const rawVal = nameStr !== undefined ? nameStr : nameInput.value;
-    const charLen = String(rawVal || "Nandha K").length;
-    nameInput.style.width = Math.max(78, charLen * 9.5) + "px";
-  }
   if (!pill) return;
   const parts = String(nameStr || "Nandha K").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) {
@@ -99,8 +30,12 @@ function setDetailMode(mode) {
 
   const btnSimple = document.getElementById("mode-btn-simple");
   const btnDev = document.getElementById("mode-btn-dev");
+  const footerModeLabel = document.getElementById("footer-mode-label");
   if (btnSimple) btnSimple.classList.toggle("active", DETAIL_MODE === "simple");
   if (btnDev) btnDev.classList.toggle("active", DETAIL_MODE === "dev");
+  if (footerModeLabel) {
+    footerModeLabel.textContent = DETAIL_MODE === "dev" ? "Audit Details" : "Simple View";
+  }
 
   if (CURRENT_ASSET) {
     renderActiveSubmission(CURRENT_ASSET);
@@ -315,45 +250,359 @@ function getTierBadgeHtml(tier) {
 
 function renderAreaLoader(message = "Running local verification...") {
   return `<div class="area-loader">
-    <span class="spinner-light"></span>
-    <span>${escapeHtml(message)}</span>
-    <div class="shimmer-bar"></div>
+    <span class="spinner-light" aria-hidden="true"></span>
+    <span class="area-loader-stage">${escapeHtml(message)}</span>
+    <div class="shimmer-bar" aria-hidden="true"></div>
   </div>`;
 }
 
-function setButtonLoading(btnEl, loadingText, useDarkSpinner = false) {
+function setButtonLoading(btnEl, loadingText, useDarkSpinner = null) {
   if (!btnEl) return () => {};
   const origHtml = btnEl.innerHTML;
   btnEl.disabled = true;
-  const spinnerClass = useDarkSpinner ? "spinner-inline" : "spinner-inline-light";
-  btnEl.innerHTML = `<span class="${spinnerClass}"></span> ${escapeHtml(loadingText)}`;
+  const isDark = useDarkSpinner !== null ? useDarkSpinner : btnEl.classList.contains("btn-primary");
+  const spinnerClass = isDark ? "spinner-inline" : "spinner-inline-light";
+  btnEl.innerHTML = `<span class="${spinnerClass}" aria-hidden="true"></span><span>${escapeHtml(loadingText)}</span>`;
   return () => {
     btnEl.disabled = false;
     btnEl.innerHTML = origHtml;
   };
 }
 
+function resetAllInputsToDefault() {
+  const clearIds = [
+    "sub-content",
+    "sub-title",
+    "sub-intent",
+    "sub-must-keep",
+    "must-keep-chip-input",
+    "replay-rule-id",
+    "replay-terms",
+    "new-fact-id",
+    "new-fact-subject",
+    "new-fact-metric",
+    "new-fact-statement",
+    "new-fact-from",
+    "new-fact-until",
+    "copilot-input",
+  ];
+  for (const id of clearIds) {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  }
+  const presetSel = document.getElementById("preset-select");
+  if (presetSel) {
+    presetSel.value = "";
+  }
+  const originSel = document.getElementById("sub-origin");
+  if (originSel) {
+    originSel.value = "ai_generated";
+  }
+  const channelSel = document.getElementById("sub-channel");
+  if (channelSel) {
+    channelSel.value = "social";
+  }
+  const modSel = document.getElementById("new-fact-modality");
+  if (modSel) {
+    modSel.value = "directional";
+  }
+  MUST_KEEP_TAGS = [];
+  renderMustKeepChips();
+
+  // Reset Step 2 & Step 3 to standby state
+  CURRENT_ASSET = null;
+  renderActiveSubmission(null);
+
+  // Reset Step 4 Submissions Queue to empty standby state
+  ALL_SUBMISSIONS = [];
+  renderSubmissionsQueueTable();
+
+  // Reset Guidelines tab first box (Linter)
+  const linterBox = document.getElementById("linter-results-box");
+  if (linterBox) {
+    linterBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+      <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">Guideline Linter Ready</div>
+      Click <strong>Scan Rules for Defects</strong> above to inspect compiled Brand-AST rules for contradictions and ambiguous terms.
+    </div>`;
+  }
+  const replayBox = document.getElementById("policy-replay-results");
+  if (replayBox) replayBox.innerHTML = "";
+
+  // Reset Metrics page boxes
+  const hBox = document.getElementById("hypotheses-table-box");
+  if (hBox) {
+    hBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+      <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">Empirical Hypotheses Scorecard Ready</div>
+      Click <strong>Refresh Metrics</strong> above or <strong>View Metrics Scorecard</strong> to compute live Section 7.4 empirical benchmark gates from telemetry.
+      <div style="margin-top:14px;">
+        <button type="button" class="btn btn-banner-preset" onclick="loadInsightsAndTelemetry(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Load Metrics Scorecard</button>
+      </div>
+    </div>`;
+  }
+  const rBox = document.getElementById("ror-telemetry-table-box");
+  if (rBox) {
+    rBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:24px 20px;">Reviewer Override Rate diagnostics will be displayed here once metrics are loaded.</div>`;
+  }
+
+  // Reset Audit Ledger boxes
+  const sumBox = document.getElementById("audit-chain-summary-box");
+  if (sumBox) {
+    sumBox.innerHTML = `<div class="audit-chain-status-banner">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="audit-chain-header-text">Cryptographic Hash-Chain Status:</span>
+        <span class="audit-intact-badge"><span class="check-icon">&#10003;</span> READY &amp; STANDBY</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-header);font-size:0.84rem;color:#E2E8F0;">Verification: <strong style="color:#FFFFFF;">Awaiting User Action</strong></span>
+        <button type="button" class="btn btn-banner-preset" onclick="loadAuditLedger(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Verify &amp; Load Ledger</button>
+      </div>
+    </div>`;
+  }
+  const evBox = document.getElementById("audit-events-table-box");
+  if (evBox) {
+    evBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:36px 20px;">
+      <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">SHA-256 Audit Ledger Ready</div>
+      Click <strong>Verify &amp; Load Ledger</strong> above to inspect the append-only cryptographic hash-chained governance log.
+    </div>`;
+  }
+
+  // Reset Banner & Contrast results
+  LAST_VISUAL_DATA = null;
+  const vBox = document.getElementById("visual-audit-results");
+  if (vBox) {
+    vBox.innerHTML = `<div style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem;">Select <strong>Load Non-Compliant Banner</strong> or <strong>Load Compliant Banner</strong> above, or upload a custom image to inspect CIEDE2000 color distances &amp; WCAG 2.1 contrast.</div>`;
+  }
+}
+
 const pauseForVisualFeedback = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
-let statusBannerTimer = null;
+function scrollToWorkflowSection(sectionId) {
+  if (sectionId === "hero-stage") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+  const el = document.getElementById(sectionId);
+  if (!el) return;
+  const header = document.querySelector(".top-header");
+  const offset = (header ? header.offsetHeight : 60) + 12;
+  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+}
+
+function navigateFromFooter(tabName, sectionId = null) {
+  switchTab(tabName, { skipScroll: true });
+  if (tabName === "workbench" && sectionId) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToWorkflowSection(sectionId));
+    });
+    return;
+  }
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
+function launchDraftComposer() {
+  navigateFromFooter("workbench", "showcase-step-1");
+  setTimeout(() => {
+    const draftEl = document.getElementById("sub-content");
+    if (draftEl) draftEl.focus({ preventScroll: true });
+  }, 520);
+}
+
+function toggleDetailModeFromFooter() {
+  const nextMode = DETAIL_MODE === "dev" ? "simple" : "dev";
+  setDetailMode(nextMode);
+  showStatusMessage(
+    nextMode === "dev"
+      ? "Switched to Audit Details view across the workbench."
+      : "Switched to Simple View across the workbench."
+  );
+}
+
+function showLocalPrivacyInfo() {
+  showStatusMessage(
+    "Local-first execution: AST linting, BERT-NLI claim verification, WCAG/CIEDE2000 image checks, and SHA-256 ledger hashing run 100% locally with zero external API calls."
+  );
+}
+
+async function checkEngineHealthFromFooter(btnEl = null) {
+  if (btnEl) btnEl.setAttribute("aria-busy", "true");
+  try {
+    const res = await fetch("/api/health");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const chainLabel = data.audit_chain_valid ? "chain verified" : "chain check flagged";
+    showStatusMessage(
+      `VeriLoom v${data.version || "2.0.0"} (${data.status || "healthy"}): ${data.active_rules_count ?? 0} active rules, ${data.facts_count ?? 0} verified facts, ${data.audit_events_count ?? 0} ledger events (${chainLabel}).`,
+      !data.audit_chain_valid
+    );
+  } catch (err) {
+    showStatusMessage(`Engine health check failed: ${err.message}`, true);
+  } finally {
+    if (btnEl) btnEl.removeAttribute("aria-busy");
+  }
+}
+
+async function resetDemoQueueFromFooter() {
+  navigateFromFooter("workbench", "showcase-step-4");
+  await resetDemoQueue(null);
+}
+
+function openPendingSocialProfile(platformName) {
+  showStatusMessage(`${platformName} placeholder icon — share your ${platformName} profile URL/ID and we will connect it.`);
+}
+
+let STATUS_TIMER = null;
+let STATUS_EXIT_TIMER = null;
+let LAST_CHAIN_EVENT_COUNT = null;
+let LAST_CHAIN_VALID_STATE = null;
+
+function scheduleStatusAutoHide(delayMs = 7000) {
+  if (STATUS_TIMER) clearTimeout(STATUS_TIMER);
+  STATUS_TIMER = setTimeout(() => {
+    dismissStatusMessage();
+  }, delayMs);
+}
+
+function dismissStatusMessage() {
+  if (STATUS_TIMER) {
+    clearTimeout(STATUS_TIMER);
+    STATUS_TIMER = null;
+  }
+  const banner = document.getElementById("status-banner");
+  if (!banner || banner.classList.contains("hidden") || banner.classList.contains("is-leaving")) {
+    return;
+  }
+  banner.classList.remove("is-entering");
+  void banner.offsetWidth;
+  banner.classList.add("is-leaving");
+  if (STATUS_EXIT_TIMER) clearTimeout(STATUS_EXIT_TIMER);
+  STATUS_EXIT_TIMER = setTimeout(() => {
+    banner.classList.add("hidden");
+    banner.classList.remove("is-leaving", "is-entering");
+    STATUS_EXIT_TIMER = null;
+  }, 590);
+}
+
 function showStatusMessage(msg, isError = false) {
   const banner = document.getElementById("status-banner");
   if (!banner) return;
-  if (statusBannerTimer) {
-    clearTimeout(statusBannerTimer);
-    statusBannerTimer = null;
-  }
-  banner.classList.remove("hidden");
-  banner.style.borderLeftColor = isError ? "#ef4444" : "rgba(255, 255, 255, 0.2)";
-  banner.style.background = isError ? "rgba(38, 14, 20, 0.95)" : "rgba(18, 19, 26, 0.95)";
-  banner.style.color = isError ? "#fca5a5" : "#FFFFFF";
-  banner.textContent = msg;
 
-  // Each and every pop-up automatically vanishes after 5 seconds
-  statusBannerTimer = setTimeout(() => {
-    banner.classList.add("hidden");
-    statusBannerTimer = null;
-  }, 5000);
+  if (STATUS_TIMER) {
+    clearTimeout(STATUS_TIMER);
+    STATUS_TIMER = null;
+  }
+  if (STATUS_EXIT_TIMER) {
+    clearTimeout(STATUS_EXIT_TIMER);
+    STATUS_EXIT_TIMER = null;
+  }
+
+  banner.style.removeProperty("border-left-color");
+  banner.style.removeProperty("background");
+  banner.style.removeProperty("color");
+
+  banner.classList.remove("hidden", "is-leaving", "is-entering");
+  banner.classList.toggle("is-error", Boolean(isError));
+
+  const iconSvg = isError
+    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+
+  banner.innerHTML = `<div class="status-toast-inner">
+    <span class="status-toast-icon">${iconSvg}</span>
+    <span class="status-toast-text">${escapeHtml(msg)}</span>
+    <button type="button" class="status-close-btn" aria-label="Dismiss notification" onclick="dismissStatusMessage()">&times;</button>
+  </div>`;
+
+  if (!banner.dataset.toastHoverBound) {
+    banner.dataset.toastHoverBound = "1";
+    banner.addEventListener("mouseenter", () => {
+      if (STATUS_TIMER) {
+        clearTimeout(STATUS_TIMER);
+        STATUS_TIMER = null;
+      }
+    });
+    banner.addEventListener("mouseleave", () => {
+      if (!banner.classList.contains("hidden") && !banner.classList.contains("is-leaving")) {
+        scheduleStatusAutoHide(10000);
+      }
+    });
+  }
+
+  void banner.offsetWidth;
+  banner.classList.add("is-entering");
+  scheduleStatusAutoHide(10000);
+}
+
+function updateTopChainBadge(isValid, totalEvents = null) {
+  const navBadge = document.getElementById("chain-status-badge");
+  if (!navBadge) return;
+
+  const validBool = Boolean(isValid);
+  const parsedCount =
+    typeof totalEvents === "number" && Number.isFinite(totalEvents)
+      ? totalEvents
+      : (typeof totalEvents === "string" && totalEvents.trim() !== "" && !Number.isNaN(Number(totalEvents))
+          ? Number(totalEvents)
+          : LAST_CHAIN_EVENT_COUNT);
+
+  const countChanged =
+    (parsedCount !== null && parsedCount !== LAST_CHAIN_EVENT_COUNT) ||
+    (LAST_CHAIN_VALID_STATE !== null && LAST_CHAIN_VALID_STATE !== validBool);
+
+  LAST_CHAIN_VALID_STATE = validBool;
+  if (parsedCount !== null) {
+    LAST_CHAIN_EVENT_COUNT = parsedCount;
+  }
+
+  navBadge.classList.toggle("chain-tampered", !validBool);
+  const countBadgeHtml =
+    LAST_CHAIN_EVENT_COUNT !== null
+      ? `<span class="chain-badge-count">${LAST_CHAIN_EVENT_COUNT}</span>`
+      : "";
+
+  if (validBool) {
+    navBadge.title =
+      LAST_CHAIN_EVENT_COUNT !== null
+        ? `SHA-256 Audit Ledger: ${LAST_CHAIN_EVENT_COUNT} blocks verified — Click to inspect`
+        : "SHA-256 Audit Ledger Integrity Verified — Click to inspect";
+    navBadge.innerHTML = `<svg class="chain-badge-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+      <span class="chain-badge-text">Chain Verified</span>
+      ${countBadgeHtml}`;
+  } else {
+    navBadge.title =
+      LAST_CHAIN_EVENT_COUNT !== null
+        ? `TAMPER ALERT: Audit chain check failed across ${LAST_CHAIN_EVENT_COUNT} blocks — Click to inspect`
+        : "TAMPER ALERT: Audit Ledger integrity mismatch detected — Click to inspect";
+    navBadge.innerHTML = `<svg class="chain-badge-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="M12 8v4"/>
+        <path d="M12 16h.01"/>
+      </svg>
+      <span class="chain-badge-text">Tamper Alert</span>
+      ${countBadgeHtml}`;
+  }
+
+  if (countChanged) {
+    navBadge.classList.remove("chain-just-synced");
+    void navBadge.offsetWidth;
+    navBadge.classList.add("chain-just-synced");
+  }
+}
+
+async function syncTopChainBadge() {
+  try {
+    const res = await fetch("/api/health");
+    if (!res.ok) return;
+    const data = await res.json();
+    updateTopChainBadge(Boolean(data.audit_chain_valid), data.audit_events_count);
+  } catch (_) {
+    // Keep last known badge state silently on transient polling errors
+  }
 }
 
 function getActiveActor() {
@@ -365,25 +614,95 @@ function getActiveActor() {
   };
 }
 
-function switchTab(tabName) {
+function playPanelVideos(panelEl) {
+  if (!panelEl) return;
+  for (const vid of panelEl.querySelectorAll("video")) {
+    if (vid.paused) vid.play().catch(() => {});
+  }
+}
+
+function switchTab(tabName, options = {}) {
   const tabs = ["workbench", "visual", "guidelines", "facts", "insights", "audit"];
   for (const t of tabs) {
     const btn = document.getElementById(`tab-btn-${t}`);
     const panel = document.getElementById(`panel-${t}`);
     if (btn) btn.setAttribute("aria-selected", t === tabName ? "true" : "false");
     if (panel) {
-      if (t === tabName) panel.classList.remove("hidden");
-      else panel.classList.add("hidden");
+      if (t === tabName) {
+        panel.classList.remove("hidden");
+        panel.classList.remove("tab-panel-anim");
+        void panel.offsetWidth;
+        panel.classList.add("tab-panel-anim");
+        playPanelVideos(panel);
+      } else {
+        panel.classList.add("hidden");
+      }
     }
   }
-  if (tabName === "visual" && !LAST_VISUAL_DATA) runVisualAuditDemo("non_compliant_demo");
+  if (tabName === "visual" && !LAST_VISUAL_DATA) {
+    const resBox = document.getElementById("visual-audit-results");
+    if (resBox && !resBox.innerHTML.trim()) {
+      resBox.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.95rem;">Select <strong>Load Non-Compliant Banner</strong> or <strong>Load Compliant Banner</strong> above, or upload a custom image to inspect CIEDE2000 color distances &amp; WCAG 2.1 contrast.</div>';
+    }
+  }
   if (tabName === "guidelines") {
     loadGuidelinesRules();
-    runGuidelineLinter(true);
+    const linterBox = document.getElementById("linter-results-box");
+    if (linterBox && !linterBox.innerHTML.trim()) {
+      linterBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+        <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">Guideline Linter Ready</div>
+        Click <strong>Scan Rules for Defects</strong> above to inspect compiled Brand-AST rules for contradictions and ambiguous terms.
+      </div>`;
+    }
   }
   if (tabName === "facts") loadFactVault();
-  if (tabName === "insights") loadInsightsAndTelemetry();
-  if (tabName === "audit") loadAuditLedger();
+  if (tabName === "insights") {
+    const hBox = document.getElementById("hypotheses-table-box");
+    if (hBox && !hBox.innerHTML.trim()) {
+      hBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:32px 20px;">
+        <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">Empirical Hypotheses Scorecard Ready</div>
+        Click <strong>Refresh Metrics</strong> above or <strong>View Metrics Scorecard</strong> to compute live Section 7.4 empirical benchmark gates from telemetry.
+        <div style="margin-top:14px;">
+          <button type="button" class="btn btn-banner-preset" onclick="loadInsightsAndTelemetry(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Load Metrics Scorecard</button>
+        </div>
+      </div>`;
+    }
+    const rBox = document.getElementById("ror-telemetry-table-box");
+    if (rBox && !rBox.innerHTML.trim()) {
+      rBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:24px 20px;">Reviewer Override Rate diagnostics will be displayed here once metrics are loaded.</div>`;
+    }
+  }
+  if (tabName === "audit") {
+    const sumBox = document.getElementById("audit-chain-summary-box");
+    if (sumBox && !sumBox.innerHTML.trim()) {
+      sumBox.innerHTML = `<div class="audit-chain-status-banner">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span class="audit-chain-header-text">Cryptographic Hash-Chain Status:</span>
+          <span class="audit-intact-badge"><span class="check-icon">&#10003;</span> READY &amp; STANDBY</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-family:var(--font-header);font-size:0.84rem;color:#E2E8F0;">Verification: <strong style="color:#FFFFFF;">Awaiting User Action</strong></span>
+          <button type="button" class="btn btn-banner-preset" onclick="loadAuditLedger(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Verify &amp; Load Ledger</button>
+        </div>
+      </div>`;
+    }
+    const evBox = document.getElementById("audit-events-table-box");
+    if (evBox && !evBox.innerHTML.trim()) {
+      evBox.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:36px 20px;">
+        <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">SHA-256 Audit Ledger Ready</div>
+        Click <strong>Verify &amp; Load Ledger</strong> above to inspect the append-only cryptographic hash-chained governance log.
+      </div>`;
+    }
+  }
+  scheduleWorkflowConnectors();
+  const header = document.querySelector(".top-header");
+  if (header) {
+    header.classList.toggle("force-glass", tabName !== "workbench");
+    header.classList.remove("header-hidden");
+  }
+  if (!options.skipScroll) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 async function loadPresets() {
@@ -465,7 +784,13 @@ function renderSubmissionsQueueTable() {
   }
 
   if (filtered.length === 0) {
-    box.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);">No submissions match the selected filter.</div>`;
+    box.innerHTML = `<div class="diff-box" style="text-align:center;color:var(--text-muted);padding:36px 20px;">
+      <div style="font-family:var(--font-header);font-size:1.02rem;color:#FFFFFF;margin-bottom:6px;">Submissions Queue Ready &amp; Waiting</div>
+      ${ALL_SUBMISSIONS.length === 0 ? "No active submissions in queue. Enter marketing copy in Step 1 above and click <strong>Verify Draft Now</strong> to run verification, or click <strong>Load Benchmark Queue</strong> below." : "No submissions match the selected filter."}
+      <div style="margin-top:14px;">
+        <button type="button" class="btn btn-banner-preset" onclick="loadSubmissionsQueue(null, this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ${ALL_SUBMISSIONS.length === 0 ? "Load Benchmark Queue" : "Refresh Submissions Queue"}</button>
+      </div>
+    </div>`;
     return;
   }
 
@@ -473,8 +798,7 @@ function renderSubmissionsQueueTable() {
   for (const item of filtered) {
     const cleanTitle = escapeHtml(item.title);
     const isSelected = CURRENT_ASSET && CURRENT_ASSET.asset_id === item.asset_id;
-    const selectedStyle = isSelected ? "background: rgba(70, 76, 232, 0.12); box-shadow: inset 3px 0 0 #6478D2;" : "";
-    html += `<tr class="${isSelected ? "row-selected-codex" : ""}" style="${selectedStyle}">
+    html += `<tr style="${isSelected ? "background: rgba(247, 230, 202, 0.07);" : ""}">
       <td style="white-space:nowrap;"><strong>${escapeHtml(item.asset_id)}</strong></td>
       <td>${cleanTitle}</td>
       <td style="white-space:nowrap;font-size:0.84rem;color:var(--text-muted);">${escapeHtml(formatOriginLabel(item.origin))} &bull; ${escapeHtml(formatChannelLabel(item.channel))}</td>
@@ -501,11 +825,13 @@ async function loadSubmissionsQueue(selectId = null, btnEl = null) {
     ALL_SUBMISSIONS = data.submissions || [];
 
     const target = selectId
-      ? ALL_SUBMISSIONS.find((x) => x.asset_id === selectId) || ALL_SUBMISSIONS[0]
-      : (CURRENT_ASSET && ALL_SUBMISSIONS.find((x) => x.asset_id === CURRENT_ASSET.asset_id)) || ALL_SUBMISSIONS[0];
+      ? ALL_SUBMISSIONS.find((x) => x.asset_id === selectId)
+      : (CURRENT_ASSET && ALL_SUBMISSIONS.find((x) => x.asset_id === CURRENT_ASSET.asset_id)) || null;
 
     if (target) {
       renderActiveSubmission(target);
+    } else if (!CURRENT_ASSET) {
+      renderActiveSubmission(null);
     }
     renderSubmissionsQueueTable();
   } catch (err) {
@@ -525,6 +851,7 @@ async function resetDemoQueue(btnEl = null) {
     const roleEl = document.getElementById("active-role-select");
     if (roleEl) roleEl.value = "Creator";
     await loadSubmissionsQueue("AST-WE-404");
+    syncTopChainBadge();
     showStatusMessage(`Cleaned ${data.removed_duplicates || 0} duplicate test run(s) and reset Role to Creator for live demo pitch.`);
   } catch (err) {
     showStatusMessage(`Error resetting queue: ${err.message}`, true);
@@ -542,6 +869,9 @@ async function selectSubmission(assetId, btnEl = null) {
     const asset = await res.json();
     renderActiveSubmission(asset);
     renderSubmissionsQueueTable();
+    if (btnEl) {
+      scrollToWorkflowSection("showcase-step-2");
+    }
   } catch (err) {
     console.error("Error selecting submission:", err);
   } finally {
@@ -551,6 +881,38 @@ async function selectSubmission(assetId, btnEl = null) {
 
 function renderActiveSubmission(asset) {
   CURRENT_ASSET = asset;
+  if (!asset) {
+    const titleEl = document.getElementById("active-asset-title");
+    if (titleEl) titleEl.textContent = "Awaiting Draft Verification";
+    const metaEl = document.getElementById("active-asset-meta");
+    if (metaEl) metaEl.innerHTML = "Ready for input. Enter marketing copy in Step 1 and click <strong>Verify Draft Now</strong>, or select a record from the Submissions Queue below.";
+    const vBadge = document.getElementById("active-verdict-badge");
+    if (vBadge) vBadge.outerHTML = '<span id="active-verdict-badge" class="tier-badge tier-pass" style="border-radius:7px;">STANDBY</span>';
+    const stBadge = document.getElementById("active-status-badge");
+    if (stBadge) stBadge.outerHTML = '<span id="active-status-badge" class="tier-badge tier-pass" style="border-radius:7px;">AWAITING ACTION</span>';
+    const origBox = document.getElementById("active-original-text");
+    if (origBox) origBox.textContent = "No draft submitted yet. Enter copy in Step 1 above to begin verification.";
+    const currBox = document.getElementById("active-current-text");
+    if (currBox) currBox.textContent = "No working copy generated yet.";
+    const findingsDiv = document.getElementById("active-findings-list");
+    if (findingsDiv) findingsDiv.innerHTML = '<div style="padding: 28px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">No active findings. Enter your draft copy and click &quot;Verify Draft Now&quot;.</div>';
+    const secBanner = document.getElementById("security-alert-banner");
+    if (secBanner) {
+      secBanner.className = "hidden";
+      secBanner.innerHTML = "";
+    }
+    const signoffActions = document.getElementById("step3-signoff-actions");
+    if (signoffActions) signoffActions.style.opacity = "0.45";
+    const btnApprove = document.getElementById("btn-decision-APPROVE");
+    if (btnApprove) btnApprove.disabled = true;
+    const btnEscalate = document.getElementById("btn-decision-ESCALATE");
+    if (btnEscalate) btnEscalate.disabled = true;
+    const btnReject = document.getElementById("btn-decision-REJECT");
+    if (btnReject) btnReject.disabled = true;
+    const routeNote = document.getElementById("approval-routing-note");
+    if (routeNote) routeNote.innerHTML = '<span style="color:var(--text-muted);font-size:0.84rem;">Ready for evaluation. Submit a draft in Step 1 to trigger multi-tier governance.</span>';
+    return;
+  }
   const cleanTitle = String(asset.title || "").replace(/§\s*(\d)/g, "Section $1").replace(/§/g, "Section ");
   document.getElementById("active-asset-title").textContent = `${asset.asset_id}: ${cleanTitle}`;
 
@@ -648,29 +1010,35 @@ function renderActiveSubmission(asset) {
   }
   if (isApproved && hasInjection) {
     secBanner.className = "diff-box";
-    secBanner.style.cssText = "border-color:#22c55e;background:rgba(34,197,94,0.12);color:#86efac;margin-bottom:16px;padding:12px 16px;";
+    secBanner.style.cssText = "border: 1px solid rgba(110, 231, 183, 0.28); background: linear-gradient(180deg, rgba(16, 38, 28, 0.72) 0%, rgba(10, 24, 18, 0.88) 100%); color: #F1F5F9; margin-bottom: 16px; padding: 14px 18px; border-radius: 9px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);";
     secBanner.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <div>
-          <strong style="color:#86efac;font-size:0.96rem;">&#10003; OWASP LLM01 Security Cleared &amp; Approved</strong>
-          <div style="font-size:0.84rem;color:var(--text-secondary);margin-top:3px;">
-            Prompt injection neutralized and PII redacted. Approved for release by <strong>${escapeHtml(asset.approved_by || actor.name)}</strong>.
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="flex:1;min-width:260px;">
+          <div style="font-family:var(--font-header);font-size:1.02rem;font-weight:600;color:#A7F3D0;letter-spacing:-0.01em;display:flex;align-items:center;gap:7px;">
+            <span>&#10003;</span>
+            <span>OWASP LLM01 Security Cleared &amp; Sign-Off Completed</span>
+          </div>
+          <div style="font-size:0.86rem;color:#E2E8F0;line-height:1.55;margin-top:5px;">
+            Prompt injection neutralized and PII redacted. Approved for production release by <strong>${escapeHtml(asset.approved_by || actor.name)}</strong>.
           </div>
         </div>
-        <span class="tier-badge tier-pass">Security Cleared</span>
+        <span class="tier-badge tier-pass" style="border-radius:7px;">Security Cleared</span>
       </div>`;
   } else if (!isApproved && hasInjection) {
     secBanner.className = "diff-box";
-    secBanner.style.cssText = "border-color:#ef4444;background:rgba(239,68,68,0.16);color:#fca5a5;margin-bottom:16px;padding:12px 16px;";
+    secBanner.style.cssText = "border: 1px solid #731A25; background: linear-gradient(180deg, rgba(58, 18, 24, 0.72) 0%, rgba(36, 12, 16, 0.88) 100%); color: #FEE2E2; margin-bottom: 16px; padding: 14px 18px; border-radius: 9px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.08);";
     secBanner.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <div>
-          <strong style="color:#fca5a5;font-size:0.96rem;">&#9888; Prompt Injection &amp; PII Leakage Detected &mdash; Routed to Legal Reviewer</strong>
-          <div style="font-size:0.84rem;color:#ffffff;margin-top:3px;">
-            OWASP LLM01 Security Gate: Intercepted <strong>${rc.injection_attempts_blocked || 2}</strong> prompt injection attempt(s), masked <strong>${rc.pii_masked_count || 2}</strong> PII item(s), and redacted <strong>${rc.confidential_terms_masked_count || 1}</strong> confidential project name(s). Requires Authorised Reviewer (Legal) sign-off.
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="flex:1;min-width:260px;">
+          <div style="font-family:var(--font-header);font-size:1.02rem;font-weight:600;color:#FECACA;letter-spacing:-0.01em;display:flex;align-items:center;gap:7px;">
+            <span>&#9888;</span>
+            <span>OWASP LLM01: Prompt Injection &amp; PII Leakage Intercepted</span>
+          </div>
+          <div style="font-size:0.86rem;color:#E2E8F0;line-height:1.55;margin-top:5px;">
+            <strong>OWASP LLM01 Security Gate:</strong> Direct instruction override attempting to bypass compliance verification and force approval was neutralized. Masked <strong>${rc.pii_masked_count || 2}</strong> sensitive PII entities and redacted <strong>${rc.confidential_terms_masked_count || 1}</strong> confidential code-names. Requires Authorised Reviewer (Legal) sign-off.
           </div>
         </div>
-        <span class="tier-badge tier-violation">OWASP LLM01 Flagged</span>
+        <span class="tier-badge tier-violation" style="border-radius:7px;">OWASP LLM01 Flagged</span>
       </div>`;
   } else if (secBanner) {
     secBanner.className = "hidden";
@@ -682,17 +1050,6 @@ function renderActiveSubmission(asset) {
   const btnApprove = document.getElementById("btn-decision-APPROVE");
   const btnEscalate = document.getElementById("btn-decision-ESCALATE");
   const btnReject = document.getElementById("btn-decision-REJECT");
-  const btnDownloadCert = document.getElementById("btn-download-certificate");
-  const btnDownloadCertOld = document.getElementById("btn-download-cert");
-
-  if (isApproved) {
-    if (btnDownloadCert) btnDownloadCert.classList.remove("hidden");
-    if (btnDownloadCertOld) btnDownloadCertOld.classList.add("hidden");
-  } else {
-    if (btnDownloadCert) btnDownloadCert.classList.add("hidden");
-    if (btnDownloadCertOld) btnDownloadCertOld.classList.add("hidden");
-  }
-
   if (btnApprove && btnEscalate && btnReject) {
     if (isApproved) {
       btnApprove.disabled = true;
@@ -711,9 +1068,6 @@ function renderActiveSubmission(asset) {
     }
   }
 
-  // Evaluate Step 2 1-Click Compliant Legal Disclosure Card (§Improvement 2)
-  evaluateRegulatoryDisclosures(asset);
-
   const routeNote = document.getElementById("approval-routing-note");
   if (routeNote) {
     if (isApproved) {
@@ -722,7 +1076,7 @@ function renderActiveSubmission(asset) {
         `<span class="dev-only-el"> &bull; Fingerprint: <code>${escapeHtml((asset.approved_sha256 || "").slice(0, 20))}...</code></span>`;
     } else if (isCreatorRole) {
       routeNote.innerHTML =
-        `<div class="rbac-lock-notice"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;display:inline-block;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Role Lock: Creators cannot self-approve submissions (Routed to <strong>${escapeHtml(asset.assigned_role)}</strong>).</div>` +
+        `<div class="rbac-lock-notice">&#128274; Role Lock: Creators cannot self-approve submissions (Routed to <strong>${escapeHtml(asset.assigned_role)}</strong>).</div>` +
         `<div style="margin-top:6px;"><button type="button" class="btn btn-primary btn-sm" style="padding:4px 11px;font-size:0.76rem;" onclick="switchRoleAndApprove()">Switch to Legal Reviewer &amp; Approve (1-Click Demo)</button></div>`;
     } else if (isManagerRole && hasInjection) {
       routeNote.innerHTML =
@@ -788,57 +1142,21 @@ function renderActiveSubmission(asset) {
         `;
       }
 
-      const isRegulatory = f.check_type === "regulatory_compliance" || (f.rule_id && f.rule_id.startsWith("REG-"));
-      if (isRegulatory) {
-        const rawLen = (asset.raw_content || "").length;
-        const discLen = (f.suggested_disclosure || "").length;
-        const totalLen = rawLen + discLen;
-        const charLimit = f.channel_char_limit || (asset.channel === "social" ? 280 : 2000);
-        const fitsLimit = totalLen <= charLimit;
-
-        cardsHtml += `
-        <div class="finding-card card-advisory" style="border-left: 4px solid #10B981; background: rgba(16, 185, 129, 0.05); margin-bottom: 14px;">
-          <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;">
-            <div>
-              <span class="tier-badge tier-pass" style="background:#10B981;color:#090D16;font-weight:700;">⚖️ STATUTORY DISCLOSURE</span>
-              <strong style="margin-left:6px;color:var(--text-primary);">${escapeHtml(f.jurisdiction_name || f.jurisdiction || "Cross-Border Advertising Law")}</strong>
-              <span style="font-size:0.8rem;color:var(--text-muted);margin-left:6px;">(${escapeHtml(f.source_clause)})</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span class="tier-badge ${fitsLimit ? "tier-pass" : "tier-violation"}">${totalLen}/${charLimit} Chars (${fitsLimit ? "Fits Channel" : "Exceeds Limit"})</span>
-              ${statusPillHtml}
-            </div>
-          </div>
-          <p style="margin:10px 0 8px 0;font-weight:500;color:var(--text-primary);">${escapeHtml(f.explanation)}</p>
-          <div style="margin:10px 0;">
-            <strong style="font-size:0.84rem;color:var(--text-secondary);">Non-Destructive Statutory Disclaimer Injection:</strong>
-            <div class="diff-box" style="margin-top:6px;border-color:rgba(16,185,129,0.35);">${renderTrackedChangesHtml(f.tracked_change || (asset.raw_content + ' {+' + (f.suggested_disclosure || '') + '+}'))}</div>
-          </div>
-          <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
-            ${isAccepted ? `
-              <span class="tier-badge tier-pass" style="padding:6px 12px;background:rgba(34,197,94,0.16);color:#86efac;border-color:rgba(34,197,94,0.45);">&#10003; Statutory Disclaimer Active</span>
-            ` : `
-              <button type="button" class="btn btn-primary" style="background:#10B981;color:#090D16;font-weight:600;padding:8px 16px;" onclick="applyRegulatoryDisclosure('${escapeHtml(f.finding_id)}', '${escapeHtml(f.rule_id)}', '${escapeHtml(f.suggested_disclosure || "")}', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="stroke:#090D16;"><polyline points="20 6 9 17 4 12"/></svg>
-                1-Click Non-Destructive Disclosure Injection
-              </button>
-            `}
-          </div>
-        </div>`;
-        continue;
-      }
-
       cardsHtml += `
       <div class="finding-card ${cardClass}">
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;">
-          <div>
-            ${getTierBadgeHtml(f.verdict_tier)}
-            <strong class="simple-only-el" style="margin-left:6px;color:var(--text-primary);">${escapeHtml(f.category ? f.category.toUpperCase() + " CHECK" : "Brand Guideline")}</strong>
-            <strong class="dev-only-el" style="margin-left:6px;color:var(--text-primary);">Rule: ${escapeHtml(f.rule_id)}</strong>
-            ${f.fact_id ? `<span class="tier-badge tier-human" style="margin-left:4px;">Fact: ${escapeHtml(f.fact_id)}</span>` : ""}
-            <span class="dev-only-el" style="font-size:0.8rem;color:var(--text-muted);margin-left:6px;">(${escapeHtml(f.source_clause)})</span>
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div class="mandatory-disclosure-header">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+              ${getTierBadgeHtml(f.verdict_tier)}
+              ${f.fact_id ? `<span class="tier-badge tier-human">Fact: ${escapeHtml(f.fact_id)}</span>` : ""}
+            </div>
+            <div>
+              <strong class="simple-only-el" style="color:var(--text-primary);">${escapeHtml(f.category ? f.category.toUpperCase() + " CHECK" : "Brand Guideline")}</strong>
+              <strong class="dev-only-el" style="color:var(--text-primary);">Rule: ${escapeHtml(f.rule_id)}</strong>
+              <span class="dev-only-el" style="font-size:0.8rem;color:var(--text-muted);margin-left:6px;">(${escapeHtml(f.source_clause)})</span>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
             ${isPending ? `<span class="next-step-pill">Recommended Next Step: Accept Fix</span>` : ""}
             <span class="tier-badge tier-pass dev-only-el" title="Intent Preservation Metric">IPM: ${Number(f.ipm_score).toFixed(2)}</span>
             ${statusPillHtml}
@@ -896,12 +1214,13 @@ function renderActiveSubmission(asset) {
                 Override Flag
               </button>
             </div>
-            ${isCreatorRole ? `<div class="rbac-lock-notice"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;display:inline-block;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Switch Role to Brand Manager or Legal Reviewer to grant waivers</div>` : ""}
+            ${isCreatorRole ? `<div class="rbac-lock-notice">&#128274; Switch Role to Brand Manager or Legal Reviewer to grant waivers</div>` : ""}
           </div>
         </div>
       </div>`;
     }
     fBox.innerHTML = cardsHtml;
+    initGlassSelects(fBox);
   }
 
   // Render AI Disclosure & Privacy Summary
@@ -949,7 +1268,6 @@ async function submitContentForVerification() {
   const mustKeep = mkRaw.split(",").map((s) => s.trim()).filter(Boolean);
   const origin = document.getElementById("sub-origin").value;
   const channel = document.getElementById("sub-channel").value;
-  const jurisdiction = document.getElementById("sub-jurisdiction") ? document.getElementById("sub-jurisdiction").value : (document.getElementById("active-jurisdiction-select")?.value || "US");
 
   if (!content) {
     showStatusMessage("Please enter content to verify.", true);
@@ -957,46 +1275,62 @@ async function submitContentForVerification() {
   }
 
   const verifyBtn = document.getElementById("btn-verify-draft");
-  const origBtnHtml = verifyBtn ? verifyBtn.innerHTML : "";
-  if (verifyBtn) {
-    verifyBtn.disabled = true;
-    verifyBtn.innerHTML = `<span class="spinner-inline"></span> Verifying with 67M BERT-NLI...`;
-  }
+  const restoreVerifyBtn = setButtonLoading(verifyBtn, "Verifying Draft...", true);
   const fBox = document.getElementById("active-findings-list");
   if (fBox) {
-    fBox.innerHTML = renderAreaLoader("Executing 9-layer deterministic AST, Fact Vault & local 67M BERT-NLI verification...");
+    fBox.innerHTML = renderAreaLoader("Executing 9-layer deterministic AST & Fact Vault checks...");
+  }
+
+  let stageTimer = null;
+  if (fBox) {
+    stageTimer = setTimeout(() => {
+      const stageEl = fBox.querySelector(".area-loader-stage");
+      if (stageEl) {
+        stageEl.style.opacity = "0";
+        setTimeout(() => {
+          if (stageEl.isConnected) {
+            stageEl.textContent = "Evaluating local 67M BERT-NLI intent & safety gates...";
+            stageEl.style.opacity = "1";
+          }
+        }, 160);
+      }
+    }, 280);
   }
 
   try {
-    const res = await fetch("/api/submissions", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        title,
-        content,
-        creator_intent: intent,
-        must_keep_points: mustKeep,
-        origin,
-        channel,
-        jurisdiction,
-        actor_name: actor.name,
-        actor_role: actor.role,
+    const [res] = await Promise.all([
+      fetch("/api/submissions", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          title,
+          content,
+          creator_intent: intent,
+          must_keep_points: mustKeep,
+          origin,
+          channel,
+          actor_name: actor.name,
+          actor_role: actor.role,
+        }),
       }),
-    });
+      pauseForVisualFeedback(520),
+    ]);
     const data = await res.json();
     if (!res.ok) {
+      if (fBox) fBox.innerHTML = "";
       showStatusMessage(data.detail || "Verification request failed.", true);
       return;
     }
     showStatusMessage(`Verified ${data.asset_id}: Verdict = ${data.overall_verdict} (${data.findings_count} finding(s)). Routed to ${data.assigned_role}.`);
     await loadSubmissionsQueue(data.asset_id);
+    syncTopChainBadge();
+    scrollToWorkflowSection("showcase-step-2");
   } catch (err) {
+    if (fBox) fBox.innerHTML = "";
     showStatusMessage(`Error: ${err.message}`, true);
   } finally {
-    if (verifyBtn) {
-      verifyBtn.disabled = false;
-      verifyBtn.innerHTML = origBtnHtml;
-    }
+    if (stageTimer) clearTimeout(stageTimer);
+    restoreVerifyBtn();
   }
 }
 
@@ -1019,8 +1353,6 @@ async function uploadDocumentFile() {
   formData.append("must_keep_points", document.getElementById("sub-must-keep").value);
   formData.append("origin", document.getElementById("sub-origin").value);
   formData.append("channel", document.getElementById("sub-channel").value);
-  const uploadJur = document.getElementById("sub-jurisdiction") ? document.getElementById("sub-jurisdiction").value : (document.getElementById("active-jurisdiction-select")?.value || "US");
-  formData.append("jurisdiction", uploadJur);
 
   try {
     await pauseForVisualFeedback(280);
@@ -1035,6 +1367,8 @@ async function uploadDocumentFile() {
     }
     showStatusMessage(`Ingested & verified ${file.name} (${data.asset_id}): Verdict = ${data.overall_verdict}.`);
     await loadSubmissionsQueue(data.asset_id);
+    syncTopChainBadge();
+    scrollToWorkflowSection("showcase-step-2");
   } catch (err) {
     showStatusMessage(`Upload error: ${err.message}`, true);
   } finally {
@@ -1078,6 +1412,7 @@ async function handleCreatorFindingAction(findingId, action, btnEl = null) {
     showStatusMessage(friendlyMsg);
     if (CURRENT_ASSET) await selectSubmission(CURRENT_ASSET.asset_id);
     await loadSubmissionsQueue(CURRENT_ASSET ? CURRENT_ASSET.asset_id : null);
+    syncTopChainBadge();
   } catch (err) {
     showStatusMessage(`Error: ${err.message}`, true);
   } finally {
@@ -1116,6 +1451,7 @@ async function handleReviewerFindingDecision(findingId, action, btnEl = null) {
     }
     showStatusMessage(`Reviewer decision ${action} (${reasonCode}) logged to audit chain (Block ${data.audit_block_hash.slice(0, 12)}...).`);
     if (CURRENT_ASSET) await selectSubmission(CURRENT_ASSET.asset_id);
+    syncTopChainBadge();
   } catch (err) {
     showStatusMessage(`Error: ${err.message}`, true);
   } finally {
@@ -1157,6 +1493,7 @@ async function submitAssetDecision(decision, btnEl = null) {
     }
     showStatusMessage(`Asset ${CURRENT_ASSET.asset_id} state set to ${data.asset_status} by ${actor.name} (${actor.role}). SHA-256 recorded in audit log.`);
     await loadSubmissionsQueue(CURRENT_ASSET.asset_id);
+    syncTopChainBadge();
   } catch (err) {
     showStatusMessage(`Error: ${err.message}`, true);
   } finally {
@@ -1165,195 +1502,8 @@ async function submitAssetDecision(decision, btnEl = null) {
 }
 
 /* ========================================================================= */
-/* CERTIFICATE DOWNLOAD & REGULATORY DISCLOSURE INJECTION (§Round 3)        */
+/* TAB 2: VISUAL & CONTRAST INSPECTOR (WITH HOVER SYNC & CUSTOM UPLOAD)      */
 /* ========================================================================= */
-async function downloadVerificationCertificate(btnEl = null) {
-  if (!CURRENT_ASSET) return;
-  const actor = getActiveActor();
-  const restoreBtn = setButtonLoading(btnEl, "Generating Certificate...", true);
-
-  try {
-    await pauseForVisualFeedback(300);
-    const res = await fetch(`/api/submissions/${encodeURIComponent(CURRENT_ASSET.asset_id)}/certificate?signer_name=${encodeURIComponent(actor.name)}&signer_role=${encodeURIComponent(actor.role)}&download=true`);
-    if (!res.ok) {
-      showStatusMessage("Failed to fetch compliance certificate.", true);
-      return;
-    }
-    const certData = await res.json();
-
-    const blob = new Blob([JSON.stringify(certData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `certificate-${CURRENT_ASSET.asset_id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showStatusMessage(`Downloaded cryptographic verification certificate for ${CURRENT_ASSET.asset_id} (Cert ID: ${certData.certificate_id || "CERT-VERIFIED"}). Merkle block chain verified.`);
-  } catch (err) {
-    showStatusMessage(`Certificate download error: ${err.message}`, true);
-  } finally {
-    restoreBtn();
-  }
-}
-
-async function downloadComplianceCertificate(btnEl = null) {
-  return downloadVerificationCertificate(btnEl);
-}
-
-function evaluateRegulatoryDisclosures(asset) {
-  const card = document.getElementById("legal-disclosure-card");
-  if (!card) return;
-
-  const findings = asset.findings || [];
-  const regFinding = findings.find((f) =>
-    (f.rule_id && f.rule_id.startsWith("REG-")) ||
-    f.category === "regulatory" ||
-    f.check_type === "regulatory_compliance" ||
-    (f.explanation && f.explanation.toLowerCase().includes("disclosure")) ||
-    (f.explanation && f.explanation.toLowerCase().includes("ai origin")) ||
-    Boolean(f.suggested_disclosure)
-  );
-
-  if (!regFinding) {
-    card.classList.add("hidden");
-    ACTIVE_DISCLOSURE_DATA = null;
-    return;
-  }
-
-  const channel = asset.channel || "social";
-  const channelLimits = { social: 280, ad: 150, email: 2000, web: 5000, deck: 500 };
-  const maxLimit = channelLimits[channel] || 280;
-
-  let disclosureText = regFinding.suggested_disclosure;
-  if (!disclosureText) {
-    if (CURRENT_JURISDICTION === "EU") disclosureText = "[AI-Assisted \u2022 EU AI Act Art. 50]";
-    else if (CURRENT_JURISDICTION === "US") disclosureText = "#Ad *Terms apply.";
-    else if (CURRENT_JURISDICTION === "UK") disclosureText = "*CAP Code: Substantiated claim.";
-    else disclosureText = "[Compliant Disclosure: Verified]";
-  }
-
-  ACTIVE_DISCLOSURE_DATA = {
-    asset_id: asset.asset_id,
-    rule_id: regFinding.rule_id || "REG-01",
-    disclosure_text: disclosureText,
-    channel,
-    max_limit: maxLimit,
-  };
-
-  const titleEl = document.getElementById("disclosure-rule-title");
-  if (titleEl) titleEl.textContent = `Missing Mandatory Legal Disclosure (${regFinding.rule_id || "Statutory Matrix"})`;
-
-  const expEl = document.getElementById("disclosure-explanation");
-  if (expEl) expEl.textContent = regFinding.explanation || "Content lacks mandatory statutory disclosure under active jurisdiction rule engine.";
-
-  const prevEl = document.getElementById("disclosure-text-preview");
-  if (prevEl) prevEl.textContent = disclosureText;
-
-  const chanBadge = document.getElementById("disclosure-channel-badge");
-  if (chanBadge) chanBadge.textContent = `${formatChannelLabel(channel)} (Max ${maxLimit} chars)`;
-
-  const currentLen = (asset.current_content || asset.raw_content || "").length;
-  const projectedLen = currentLen + disclosureText.length + 2;
-  const remaining = maxLimit - projectedLen;
-  const fillPct = Math.min(100, Math.round((projectedLen / maxLimit) * 100));
-
-  const fillBar = document.getElementById("disclosure-char-meter-fill");
-  const countLabel = document.getElementById("disclosure-char-count-label");
-
-  if (fillBar) {
-    fillBar.style.width = `${fillPct}%`;
-    fillBar.style.background = fillPct > 100 ? "#F43F5E" : (fillPct > 80 ? "#F59E0B" : "#10B981");
-  }
-  if (countLabel) {
-    countLabel.textContent = `${projectedLen} / ${maxLimit} chars (${remaining >= 0 ? remaining + " remaining" : Math.abs(remaining) + " over limit!"})`;
-    countLabel.style.color = fillPct > 100 ? "#F43F5E" : (fillPct > 80 ? "#F59E0B" : "#34D399");
-  }
-
-  card.classList.remove("hidden");
-}
-
-async function injectCompliantDisclosure(btnEl = null) {
-  if (!ACTIVE_DISCLOSURE_DATA || !CURRENT_ASSET) return;
-  const actor = getActiveActor();
-  const restoreBtn = setButtonLoading(btnEl, "Appending Disclosure...", true);
-
-  try {
-    await pauseForVisualFeedback(280);
-    const res = await fetch(`/api/submissions/${encodeURIComponent(ACTIVE_DISCLOSURE_DATA.asset_id)}/apply-disclosure`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        rule_id: ACTIVE_DISCLOSURE_DATA.rule_id,
-        disclosure_text: ACTIVE_DISCLOSURE_DATA.disclosure_text,
-        placement: "append",
-        actor_name: actor.name,
-        actor_role: actor.role,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showStatusMessage(data.detail || "Failed to inject disclosure.", true);
-      return;
-    }
-    CURRENT_ASSET = data;
-    showStatusMessage(`Appended compliant disclosure to ${ACTIVE_DISCLOSURE_DATA.asset_id}. Working copy updated & chained to audit block.`);
-    await selectSubmission(ACTIVE_DISCLOSURE_DATA.asset_id);
-  } catch (err) {
-    showStatusMessage(`Disclosure error: ${err.message}`, true);
-  } finally {
-    restoreBtn();
-  }
-}
-
-async function applyRegulatoryDisclosure(findingId, ruleId, disclosureText, btnEl = null) {
-  if (!CURRENT_ASSET) return;
-  const actor = getActiveActor();
-  const restoreBtn = setButtonLoading(btnEl, "Injecting...", true);
-  try {
-    await pauseForVisualFeedback(240);
-    const textToInject = disclosureText || (CURRENT_JURISDICTION === "EU" ? "[AI-Assisted \u2022 EU AI Act Art. 50]" : "#Ad *Terms apply.");
-    const res = await fetch(`/api/submissions/${encodeURIComponent(CURRENT_ASSET.asset_id)}/apply-disclosure`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        rule_id: ruleId || "REG-01",
-        disclosure_text: textToInject,
-        placement: "append",
-        actor_name: actor.name,
-        actor_role: actor.role,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showStatusMessage(data.detail || "Failed to apply disclosure", true);
-      return;
-    }
-    CURRENT_ASSET = data;
-    showStatusMessage(`Statutory disclosure injected into ${CURRENT_ASSET.asset_id}. Working copy updated & audited.`);
-    await selectSubmission(CURRENT_ASSET.asset_id);
-  } catch (err) {
-    showStatusMessage(`Error applying disclosure: ${err.message}`, true);
-  } finally {
-    restoreBtn();
-  }
-}
-
-/* ========================================================================= */
-/* TAB 2: VISUAL & CONTRAST INSPECTOR (WITH LOGO SAFE-ZONE OVERLAY)          */
-/* ========================================================================= */
-function toggleLogoSafeZoneOverlay() {
-  SHOW_SAFEZONE_OVERLAY = !SHOW_SAFEZONE_OVERLAY;
-  const btn = document.getElementById("btn-toggle-safezone-overlay");
-  if (btn) {
-    btn.classList.toggle("active", SHOW_SAFEZONE_OVERLAY);
-  }
-  drawVisualCanvas(null);
-  showStatusMessage(`Logo Safe-Zone (0.5x Margin) overlay ${SHOW_SAFEZONE_OVERLAY ? "enabled" : "hidden"}.`);
-}
-
 function drawVisualCanvas(highlightedBoxId = null) {
   const canvas = document.getElementById("visual-inspector-canvas");
   if (!canvas || !LAST_VISUAL_DATA || !LAST_VISUAL_IMG) return;
@@ -1361,109 +1511,32 @@ function drawVisualCanvas(highlightedBoxId = null) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(LAST_VISUAL_IMG, 0, 0, canvas.width, canvas.height);
 
-  const scaleX = canvas.width / (LAST_VISUAL_DATA.image_dimensions?.width || 1200);
-  const scaleY = canvas.height / (LAST_VISUAL_DATA.image_dimensions?.height || 630);
-
-  // Safe-Zone Clearance Overlay (0.5x Logo Height Margin)
-  const sz = LAST_VISUAL_DATA.safe_zone_audit;
-  if (SHOW_SAFEZONE_OVERLAY && sz && sz.safe_zone_bbox) {
-    const sb = sz.safe_zone_bbox;
-    const isSzPass = sz.safe_zone_pass !== false && sz.passes_safe_zone !== false;
-    const sx = sb.x * scaleX;
-    const sy = sb.y * scaleY;
-    const sw = sb.width * scaleX;
-    const sh = sb.height * scaleY;
-
-    ctx.save();
-    // 0.5x margin outer boundary
-    ctx.setLineDash([6, 4]);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = isSzPass ? "#10B981" : "#F43F5E";
-    ctx.fillStyle = isSzPass ? "rgba(16, 185, 129, 0.12)" : "rgba(244, 63, 94, 0.16)";
-    ctx.fillRect(sx, sy, sw, sh);
-    ctx.strokeRect(sx, sy, sw, sh);
-
-    // Core Brand Logo bounding box (cyan)
-    if (sz.logo_bbox) {
-      const lb = sz.logo_bbox;
-      const lx = lb.x * scaleX;
-      const ly = lb.y * scaleY;
-      const lw = lb.width * scaleX;
-      const lh = lb.height * scaleY;
-      ctx.setLineDash([]);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "#38BDF8";
-      ctx.strokeRect(lx, ly, lw, lh);
-
-      ctx.fillStyle = "#0F172A";
-      ctx.fillRect(lx, Math.max(0, ly - 18), 110, 18);
-      ctx.fillStyle = "#38BDF8";
-      ctx.font = "bold 10px sans-serif";
-      ctx.fillText("BRAND LOGO", lx + 4, Math.max(12, ly - 5));
-    }
-
-    // Safe zone status tag
-    ctx.fillStyle = isSzPass ? "#065F46" : "#9F1239";
-    const tagWidth = 270;
-    ctx.fillRect(sx, Math.max(0, sy - 18), tagWidth, 18);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 10px sans-serif";
-    ctx.fillText(
-      `SAFE ZONE: ${sz.required_padding_px}px (0.5x H) \u2022 ${isSzPass ? "PASS (CLEARED)" : "FAIL (ENCROACHED)"}`,
-      sx + 6,
-      Math.max(12, sy - 5)
-    );
-    ctx.restore();
-
-    // Highlight encroaching elements
-    if (sz.encroaching_elements && sz.encroaching_elements.length > 0) {
-      for (const enc of sz.encroaching_elements) {
-        const eb = enc.bbox || enc;
-        const ex = eb.x * scaleX;
-        const ey = eb.y * scaleY;
-        const ew = eb.width * scaleX;
-        const eh = eb.height * scaleY;
-        ctx.save();
-        ctx.setLineDash([4, 2]);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "#F43F5E";
-        ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
-        ctx.fillRect(ex, ey, ew, eh);
-        ctx.strokeRect(ex, ey, ew, eh);
-        ctx.fillStyle = "#F43F5E";
-        ctx.font = "bold 9px sans-serif";
-        ctx.fillText("MARGIN COLLISION", ex + 2, ey + 10);
-        ctx.restore();
-      }
-    }
-  }
-
   for (const box of LAST_VISUAL_DATA.text_boxes || []) {
     const b = box.bbox;
     const isHighlighted = highlightedBoxId && box.box_id === highlightedBoxId;
     ctx.save();
     if (isHighlighted) {
-      ctx.shadowColor = "#38BDF8";
+      ctx.shadowColor = "#F7E6CA";
       ctx.shadowBlur = 16;
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "#38BDF8";
+      ctx.lineWidth = 4.5;
+      ctx.strokeStyle = "#F7E6CA";
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(56, 189, 248, 0.2)";
+      ctx.fillStyle = "rgba(247, 230, 202, 0.16)";
       ctx.fillRect(b.x, b.y, b.width, b.height);
     } else {
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3;
       if (box.wcag_aa_pass) {
-        ctx.strokeStyle = "#10B981";
+        ctx.strokeStyle = "#16a34a";
         ctx.setLineDash([]);
       } else {
-        ctx.strokeStyle = "#F43F5E";
+        ctx.strokeStyle = "#dc2626";
         ctx.setLineDash([6, 4]);
       }
     }
     ctx.strokeRect(b.x, b.y, b.width, b.height);
-    ctx.fillStyle = isHighlighted ? "#0284C7" : (box.wcag_aa_pass ? "#065F46" : "#9F1239");
+    ctx.fillStyle = isHighlighted ? "#E8D59E" : (box.wcag_aa_pass ? "#166534" : "#991b1b");
     ctx.fillRect(b.x, Math.max(0, b.y - 20), 215, 20);
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = isHighlighted ? "#1A1A1A" : "#ffffff";
     ctx.font = "bold 11px sans-serif";
     ctx.fillText(
       `${box.box_id}: ${box.contrast_ratio}:1 (${box.wcag_aa_pass ? "PASS" : "FAIL <4.5:1"})`,
@@ -1480,7 +1553,13 @@ function highlightOcrBox(boxId) {
 
 function renderVisualAuditResults(data) {
   LAST_VISUAL_DATA = data;
-  document.getElementById("visual-banner-title").textContent = data.banner_label || "1. Banner Canvas & OCR Bounding Boxes";
+  const rawLabel = String(data.banner_label || "Banner Canvas & OCR Inspection");
+  const cleanLabel = rawLabel.includes("Non-Compliant")
+    ? "Non-Compliant Draft Banner (Visual Defects Detected)"
+    : rawLabel.includes("Compliant")
+    ? "Compliant Brand Banner (All Invariants Passed)"
+    : rawLabel;
+  document.getElementById("visual-banner-title").textContent = cleanLabel;
 
   if (data.preview_data_url) {
     const img = new Image();
@@ -1491,27 +1570,27 @@ function renderVisualAuditResults(data) {
     img.src = data.preview_data_url;
   }
 
-  let html = `<div style="margin-bottom:12px;">Overall Visual Audit Verdict: ${getTierBadgeHtml(data.overall_pass ? "PASS" : "VIOLATION")}</div>`;
-  html += `<h4 style="margin:10px 0 6px 0;color:var(--text-primary);">1. Dominant Colour Swatches <span class="dev-only-el">(CIEDE2000 &Delta;E<sub>00</sub> &le; 2.5)</span></h4>`;
+  let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><span style="font-family:var(--font-header);font-size:0.92rem;font-weight:500;color:var(--text-primary);">Overall Visual Audit Verdict:</span> ${getTierBadgeHtml(data.overall_pass ? "PASS" : "VIOLATION")}</div>`;
+  html += `<h4 style="margin:10px 0 6px 0;color:var(--text-primary);font-family:var(--font-header);font-size:0.94rem;">1. Dominant Colour Swatches <span class="dev-only-el">(CIEDE2000 &Delta;E<sub>00</sub> &le; 2.5)</span></h4>`;
   html += `<table class="data-table"><thead><tr><th>Swatch</th><th>Area</th><th>Nearest Brand Colour</th><th class="dev-only-el">&Delta;E<sub>00</sub></th><th>Status</th></tr></thead><tbody>`;
   for (const s of data.dominant_swatches || []) {
     html += `<tr>
-      <td style="white-space:nowrap;"><span style="display:inline-block;width:14px;height:14px;background:${escapeHtml(s.tested_hex)};border:1px solid var(--border-card);border-radius:3px;vertical-align:middle;margin-right:6px;"></span><code>${escapeHtml(s.tested_hex)}</code></td>
+      <td style="white-space:nowrap;"><span style="display:inline-block;width:14px;height:14px;background:${escapeHtml(s.tested_hex)};border:1px solid #444856;border-radius:3px;vertical-align:middle;margin-right:6px;"></span><span class="hex-code-chip">${escapeHtml(s.tested_hex)}</span></td>
       <td>${s.pixel_share}%</td>
-      <td>${escapeHtml(s.nearest_name)} (<code>${escapeHtml(s.nearest_hex)}</code>)</td>
+      <td>${escapeHtml(s.nearest_name)} <span class="hex-bracket-wrap">(<span class="hex-code-chip">${escapeHtml(s.nearest_hex)}</span>)</span></td>
       <td class="dev-only-el"><strong>${s.delta_e00}</strong></td>
       <td style="white-space:nowrap;" title="CIEDE2000 distance = ${s.delta_e00}">${s.within_tolerance ? '<span class="tier-badge tier-pass">Within Tolerance (&le; 2.5)</span>' : '<span class="tier-badge tier-violation">Off-Palette (&gt; 2.5)</span>'}</td>
     </tr>`;
   }
   html += `</tbody></table>`;
 
-  html += `<h4 style="margin:14px 0 6px 0;color:var(--text-primary);">2. WCAG 2.1 Contrast Under OCR Text Boxes (&ge; 4.5:1)</h4>`;
+  html += `<h4 style="margin:14px 0 6px 0;color:var(--text-primary);font-family:var(--font-header);font-size:0.94rem;">2. WCAG 2.1 Contrast Under OCR Text Boxes (&ge; 4.5:1)</h4>`;
   html += `<table class="data-table"><thead><tr><th>OCR Box</th><th>Foreground Ink</th><th>Background Fill</th><th>Measured Ratio</th><th>WCAG 2.1 AA</th></tr></thead><tbody>`;
   for (const b of data.text_boxes || []) {
     html += `<tr class="ocr-table-row" onmouseenter="highlightOcrBox('${escapeHtml(b.box_id)}')" onmouseleave="highlightOcrBox(null)">
       <td><strong>${escapeHtml(b.box_id)}</strong></td>
-      <td><span style="display:inline-block;width:11px;height:11px;background:${escapeHtml(b.foreground_hex)};border:1px solid var(--border-card);border-radius:2px;vertical-align:middle;margin-right:5px;"></span><code>${escapeHtml(b.foreground_hex)}</code></td>
-      <td><span style="display:inline-block;width:11px;height:11px;background:${escapeHtml(b.background_hex)};border:1px solid var(--border-card);border-radius:2px;vertical-align:middle;margin-right:5px;"></span><code>${escapeHtml(b.background_hex)}</code></td>
+      <td><span style="display:inline-block;width:11px;height:11px;background:${escapeHtml(b.foreground_hex)};border:1px solid #444856;border-radius:2px;vertical-align:middle;margin-right:5px;"></span><span class="hex-code-chip">${escapeHtml(b.foreground_hex)}</span></td>
+      <td><span style="display:inline-block;width:11px;height:11px;background:${escapeHtml(b.background_hex)};border:1px solid #444856;border-radius:2px;vertical-align:middle;margin-right:5px;"></span><span class="hex-code-chip">${escapeHtml(b.background_hex)}</span></td>
       <td><strong>${b.contrast_ratio}:1</strong></td>
       <td style="white-space:nowrap;">${b.wcag_aa_pass ? '<span class="tier-badge tier-pass">AA Pass (&ge; 4.5:1)</span>' : '<span class="tier-badge tier-violation">AA Fail (&lt; 4.5:1)</span>'}</td>
     </tr>`;
@@ -1519,60 +1598,11 @@ function renderVisualAuditResults(data) {
   html += `</tbody></table>`;
 
   const lc = data.logo_check || {};
-  html += `<h4 style="margin:14px 0 6px 0;color:var(--text-primary);">3. Wordmark Aspect Ratio Check <span class="dev-only-el">[VIS-02]</span></h4>`;
+  html += `<h4 style="margin:14px 0 6px 0;color:var(--text-primary);font-family:var(--font-header);font-size:0.94rem;">3. Wordmark Aspect Ratio Check <span class="dev-only-el">[VIS-02]</span></h4>`;
   html += `<div class="diff-box">Measured Ratio: <strong>${lc.measured_ratio}:1</strong> (Expected: ${lc.expected_ratio}:1 &plusmn;5%) &mdash; ${lc.pass ? '<span class="tier-badge tier-pass">Valid Proportions</span>' : '<span class="tier-badge tier-violation">Stretched / Distorted</span>'}</div>`;
 
-  const sz = data.safe_zone_audit || {};
-  if (sz.required_padding_px) {
-    const isSzPass = sz.safe_zone_pass !== false && sz.passes_safe_zone !== false;
-    html += `<h4 style="margin:16px 0 6px 0;color:var(--text-primary);">4. Brand Logo Safe-Zone Clearance (§8.3 &bull; 0.5&times; Padding Rule)</h4>`;
-    html += `<div class="diff-box" style="border-left: 4px solid ${isSzPass ? 'var(--accent-emerald)' : 'var(--accent-rose)'}; background: #0B1120;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-        <span style="font-weight:600;color:var(--text-primary);">Minimum 0.5&times; Logo Height Buffer: <strong>${sz.required_padding_px}px</strong> required</span>
-        ${isSzPass ? '<span class="safezone-pass-badge">&#10003; Safe-Zone Cleared</span>' : '<span class="safezone-fail-badge">&#9888; Safe-Zone Encroached</span>'}
-      </div>
-      <table class="safe-zone-table">
-        <thead>
-          <tr>
-            <th>Boundary</th>
-            <th>Required Margin</th>
-            <th>Measured Clearance</th>
-            <th>Margin Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Left Margin</strong></td>
-            <td>&ge; ${sz.required_padding_px}px</td>
-            <td><strong>${sz.edge_clearance ? sz.edge_clearance.left_px : 0}px</strong></td>
-            <td>${(sz.edge_clearance?.left_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
-          </tr>
-          <tr>
-            <td><strong>Top Margin</strong></td>
-            <td>&ge; ${sz.required_padding_px}px</td>
-            <td><strong>${sz.edge_clearance ? sz.edge_clearance.top_px : 0}px</strong></td>
-            <td>${(sz.edge_clearance?.top_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
-          </tr>
-          <tr>
-            <td><strong>Right Margin</strong></td>
-            <td>&ge; ${sz.required_padding_px}px</td>
-            <td><strong>${sz.edge_clearance ? sz.edge_clearance.right_px : 0}px</strong></td>
-            <td>${(sz.edge_clearance?.right_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
-          </tr>
-          <tr>
-            <td><strong>Bottom Margin</strong></td>
-            <td>&ge; ${sz.required_padding_px}px</td>
-            <td><strong>${sz.edge_clearance ? sz.edge_clearance.bottom_px : 0}px</strong></td>
-            <td>${(sz.edge_clearance?.bottom_px || 0) >= sz.required_padding_px ? '<span class="tier-badge tier-pass">Pass</span>' : '<span class="tier-badge tier-violation">Violated</span>'}</td>
-          </tr>
-        </tbody>
-      </table>
-      ${sz.edge_violations && sz.edge_violations.length > 0 ? `<div style="color:#FDA4AF;font-size:0.82rem;margin-top:8px;">⚠️ Edge Violations: ${sz.edge_violations.map(escapeHtml).join(", ")}</div>` : ''}
-      ${sz.encroaching_elements && sz.encroaching_elements.length > 0 ? `<div style="color:#FDA4AF;font-size:0.82rem;margin-top:4px;">⚠️ Encroaching Elements: ${sz.encroaching_elements.map(e => escapeHtml(e.violation || e.box_id)).join("; ")}</div>` : ''}
-    </div>`;
-  }
-
   document.getElementById("visual-audit-results").innerHTML = html;
+  scheduleWorkflowConnectors();
 }
 
 async function runVisualAuditDemo(mode, btnEl = null) {
@@ -1647,13 +1677,14 @@ async function loadGuidelinesRules() {
     for (const r of data.rules || []) {
       html += `<tr>
         <td style="white-space:nowrap;"><strong>${escapeHtml(r.rule_id)}</strong><br/><span style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(r.severity)}</span></td>
-        <td style="white-space:nowrap;"><code>${escapeHtml(r.modality)}</code></td>
+        <td style="white-space:nowrap;"><span class="modality-chip">${escapeHtml(r.modality)}</span></td>
         <td class="dev-only-el"><span style="color:var(--text-secondary);">${escapeHtml(r.check_type)}</span></td>
         <td><strong>${escapeHtml(r.source_clause)}</strong><br/><span style="color:var(--text-secondary);">${escapeHtml(r.description)}</span></td>
       </tr>`;
     }
     html += "</tbody></table>";
     box.innerHTML = html;
+    scheduleWorkflowConnectors();
   } catch (err) {
     console.error("Error loading rules:", err);
   }
@@ -1720,10 +1751,11 @@ async function runGuidelineLinter(includeSeeded = true, btnEl = null) {
           </button>
         </div>
         <p style="margin:6px 0;color:var(--text-secondary);font-size:0.9rem;">${g.explanations.map((e) => escapeHtml(e)).join(" &bull; ")}</p>
-        <div style="font-size:0.84rem;color:#86EFAC;margin-top:6px;"><strong>Recommended AST Fix:</strong> ${escapeHtml(g.remediations[0] || "")}</div>
+        <div class="recommended-ast-fix"><strong>Recommended AST Fix:</strong> ${escapeHtml(g.remediations[0] || "")}</div>
       </div>`;
     }
     box.innerHTML = html;
+    scheduleWorkflowConnectors();
   } catch (err) {
     console.error("Linter error:", err);
   } finally {
@@ -1732,10 +1764,24 @@ async function runGuidelineLinter(includeSeeded = true, btnEl = null) {
 }
 
 async function executePolicyReplay(btnEl = null) {
-  const restoreBtn = setButtonLoading(btnEl, "Simulating Replay...", true);
-  const ruleId = document.getElementById("replay-rule-id").value.trim() || "TERM-01";
-  const termsRaw = document.getElementById("replay-terms").value;
+  const ruleInput = document.getElementById("replay-rule-id");
+  const termsInput = document.getElementById("replay-terms");
+  const ruleId = ruleInput ? ruleInput.value.trim() : "";
+  const termsRaw = termsInput ? termsInput.value : "";
   const terms = termsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+
+  if (!ruleId) {
+    showStatusMessage("Please enter a Rule ID to replay (e.g. TERM-01).", true);
+    if (ruleInput) ruleInput.focus();
+    return;
+  }
+  if (terms.length === 0) {
+    showStatusMessage("Please enter at least one proposed forbidden term.", true);
+    if (termsInput) termsInput.focus();
+    return;
+  }
+
+  const restoreBtn = setButtonLoading(btnEl, "Simulating Replay...", true);
   const box = document.getElementById("policy-replay-results");
   if (box) box.innerHTML = renderAreaLoader("Replaying proposed policy across 18 benchmark pieces...");
 
@@ -1803,7 +1849,17 @@ function renderFactVaultView() {
   const filterBar = document.getElementById("fact-filter-bar");
   if (!box || !ALL_FACTS_DATA) return;
 
-  const facts = ALL_FACTS_DATA.facts || [];
+  const allRawFacts = ALL_FACTS_DATA.facts || [];
+  // Sample reference baseline: 2 Active Facts and 2 Expired Facts (+ any user-added facts)
+  const activeSamples = allRawFacts.filter((f) => f.status === "ACTIVE").slice(0, 2);
+  const expiredSamples = allRawFacts.filter((f) => f.status === "EXPIRED").slice(0, 2);
+  const sampleFactIds = new Set([...activeSamples.map((f) => f.fact_id), ...expiredSamples.map((f) => f.fact_id)]);
+
+  // Keep only the curated 1-2 sample reference facts per status, plus any custom-added facts
+  const facts = allRawFacts.filter(
+    (f) => sampleFactIds.has(f.fact_id) || f.source === "Brand Admin Governance Entry" || f.is_custom
+  );
+
   const activeCount = facts.filter((f) => f.status === "ACTIVE").length;
   const expiredCount = facts.filter((f) => f.status === "EXPIRED").length;
 
@@ -1830,12 +1886,29 @@ function renderFactVaultView() {
   const actor = getActiveActor();
   const isBrandAdmin = actor.role === "Brand Admin";
 
-  let html = '<table class="data-table"><thead><tr><th>Fact ID</th><th>Status</th><th>Subject &amp; Approved Claim</th><th>Modality</th><th>Validity Window</th><th>Source &amp; Owner</th><th style="text-align:right;">Governance</th></tr></thead><tbody>';
+  let html = `
+    <div class="fact-sample-reference-banner" style="margin-bottom: 12px; padding: 10px 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span class="data-chip" style="background: linear-gradient(180deg, #2D313C 0%, #22252E 100%); border: 1px solid #444856; color: #FFFFFF; font-family: var(--font-header); font-size: 0.72rem; font-weight: 500;">Sample Reference Baseline</span>
+        <span style="font-size: 0.82rem; color: rgba(255, 255, 255, 0.78); font-family: var(--font-header);">
+          Displaying <strong>1–2 sample facts per category</strong> (2 Active &middot; 2 Expired) for reference testing.
+        </span>
+      </div>
+      <span style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-header);">Click <strong>+ Add Approved Fact</strong> to register custom organizational facts</span>
+    </div>
+    <table class="data-table"><thead><tr><th>Fact ID</th><th>Status</th><th>Subject &amp; Approved Claim</th><th>Modality</th><th>Validity Window</th><th>Source &amp; Owner</th><th style="text-align:right;">Governance</th></tr></thead><tbody>
+  `;
+
   for (const f of filtered) {
     const isExpired = f.status === "EXPIRED";
+    const isSample = sampleFactIds.has(f.fact_id);
     const badge = !isExpired
       ? '<span class="tier-badge tier-pass">Active Fact</span>'
       : '<span class="tier-badge tier-violation">Expired Fact</span>';
+
+    const sampleChip = isSample
+      ? '<span class="data-chip" style="font-size:0.68rem;padding:1px 6px;margin-left:6px;opacity:0.85;font-family:var(--font-header);">Sample Reference</span>'
+      : '<span class="data-chip" style="font-size:0.68rem;padding:1px 6px;margin-left:6px;color:#85E3B3;border-color:rgba(133,227,179,0.3);font-family:var(--font-header);">Custom Fact</span>';
 
     const actionBtn = isBrandAdmin
       ? `<button type="button" class="btn ${isExpired ? "btn-outline" : "btn-ghost-danger"} btn-sm" onclick="toggleFactStatus('${escapeHtml(f.fact_id)}', this)">
@@ -1846,14 +1919,14 @@ function renderFactVaultView() {
          </button>`;
 
     html += `<tr class="${isExpired ? "row-expired-fact" : ""}">
-      <td style="white-space:nowrap;"><strong>${escapeHtml(f.fact_id)}</strong></td>
+      <td style="white-space:nowrap;"><strong>${escapeHtml(f.fact_id)}</strong>${sampleChip}</td>
       <td style="white-space:nowrap;">${badge}</td>
-      <td>
-        <strong>${escapeHtml(f.subject)}: <span class="${isExpired ? "expired-claim-strike" : ""}">${escapeHtml(f.metric)}</span></strong><br/>
-        <span style="font-size:0.86rem;color:var(--text-secondary);">${escapeHtml(f.statement)}</span>
+      <td style="min-width:270px;max-width:440px;word-break:normal;overflow-wrap:break-word;">
+        <strong style="color:#FFFFFF;">${escapeHtml(f.subject)}: <span class="${isExpired ? "expired-claim-strike" : ""}">${escapeHtml(f.metric)}</span></strong><br/>
+        <span style="font-size:0.85rem;color:var(--text-secondary);line-height:1.45;display:inline-block;margin-top:3px;">${escapeHtml(f.statement)}</span>
       </td>
-      <td style="white-space:nowrap;"><code>${escapeHtml(f.modality)}</code></td>
-      <td style="white-space:nowrap;"><code>${escapeHtml(f.valid_from)}</code> to <code>${escapeHtml(f.valid_until)}</code></td>
+      <td style="white-space:nowrap;"><span class="modality-chip">${escapeHtml(f.modality)}</span></td>
+      <td style="white-space:nowrap;"><span class="data-chip">${escapeHtml(f.valid_from)}</span> <span style="color:var(--text-muted);margin:0 3px;">&rarr;</span> <span class="data-chip">${escapeHtml(f.valid_until)}</span></td>
       <td><strong>${escapeHtml(f.source)}</strong><br/><span style="font-size:0.82rem;color:var(--text-muted);">${escapeHtml(f.owner)}</span></td>
       <td style="text-align:right;white-space:nowrap;">${actionBtn}</td>
     </tr>`;
@@ -1894,6 +1967,7 @@ async function toggleFactStatus(factId, btnEl = null) {
     }
     showStatusMessage(`Fact ${factId} status set to ${data.new_status} (valid_until: ${data.valid_until}). Chained to SHA-256 audit log.`);
     await loadFactVault();
+    syncTopChainBadge();
   } catch (err) {
     showStatusMessage(`Error: ${err.message}`, true);
   } finally {
@@ -1903,13 +1977,18 @@ async function toggleFactStatus(factId, btnEl = null) {
 
 async function submitNewFact(btnEl = null) {
   const actor = getActiveActor();
-  const factId = document.getElementById("new-fact-id").value.trim() || "F-2026-09";
-  const subject = document.getElementById("new-fact-subject").value.trim() || "Enterprise Cohort";
-  const metric = document.getElementById("new-fact-metric").value.trim() || "94% completion rate";
+  const factId = document.getElementById("new-fact-id").value.trim();
+  const subject = document.getElementById("new-fact-subject").value.trim();
+  const metric = document.getElementById("new-fact-metric").value.trim();
   const modality = document.getElementById("new-fact-modality").value;
   const statement = document.getElementById("new-fact-statement").value.trim();
-  const validFrom = document.getElementById("new-fact-from").value.trim() || "2026-07-01";
-  const validUntil = document.getElementById("new-fact-until").value.trim() || "2027-06-30";
+  const validFrom = document.getElementById("new-fact-from").value.trim();
+  const validUntil = document.getElementById("new-fact-until").value.trim();
+
+  if (!factId || !subject || !metric || !statement || !validFrom || !validUntil) {
+    showStatusMessage("Please fill in Fact ID, Subject, Approved Metric, Statement, Valid From, and Valid Until.", true);
+    return;
+  }
 
   const restoreBtn = setButtonLoading(btnEl, "Saving Fact...", true);
   try {
@@ -1940,6 +2019,7 @@ async function submitNewFact(btnEl = null) {
     document.getElementById("add-fact-drawer").classList.add("hidden");
     showStatusMessage(`Added approved fact ${data.fact_id} to Fact Vault (Audit Block ${data.audit_block_hash.slice(0, 12)}...).`);
     await loadFactVault();
+    syncTopChainBadge();
   } catch (err) {
     showStatusMessage(`Error: ${err.message}`, true);
   } finally {
@@ -1966,13 +2046,13 @@ async function loadInsightsAndTelemetry(btnEl = null) {
 
     const hBox = document.getElementById("hypotheses-table-box");
     if (hBox) {
-      let hHtml = '<table class="data-table"><thead><tr><th style="white-space:nowrap;">ID</th><th>Hypothesis (Section 7.4)</th><th style="white-space:nowrap;">Target</th><th style="white-space:nowrap;">Measured Round 2 Result</th><th style="white-space:nowrap;">Status</th></tr></thead><tbody>';
+      let hHtml = '<table class="data-table"><thead><tr><th>ID</th><th>Hypothesis (Section 7.4)</th><th>Target</th><th>Measured Round 2 Result</th><th>Status</th></tr></thead><tbody>';
       for (const h of data.hypotheses || []) {
         hHtml += `<tr>
           <td style="white-space:nowrap;"><strong>${escapeHtml(h.id)}</strong></td>
           <td>${escapeHtml(h.hypothesis)}</td>
-          <td style="white-space:nowrap;"><code>${escapeHtml(h.target)}</code></td>
-          <td style="white-space:nowrap;"><strong>${escapeHtml(h.measured)}</strong></td>
+          <td style="white-space:nowrap;"><span class="data-chip">${escapeHtml(h.target)}</span></td>
+          <td><strong>${escapeHtml(h.measured)}</strong></td>
           <td style="white-space:nowrap;"><span class="tier-badge tier-pass">${escapeHtml(h.status)}</span></td>
         </tr>`;
       }
@@ -1982,7 +2062,7 @@ async function loadInsightsAndTelemetry(btnEl = null) {
 
     const rBox = document.getElementById("ror-telemetry-table-box");
     if (rBox && data.ror_report) {
-      let rHtml = '<table class="data-table"><thead><tr><th style="width:200px;">Rule ID &amp; Clause</th><th style="text-align:center;white-space:nowrap;width:80px;">Total Flags</th><th style="text-align:center;white-space:nowrap;width:110px;">Overridden</th><th style="text-align:center;white-space:nowrap;width:75px;">ROR</th><th style="white-space:nowrap;width:170px;">Diagnostic Classification</th><th style="min-width:240px;">Actionable Recommendation</th></tr></thead><tbody>';
+      let rHtml = '<table class="data-table"><thead><tr><th>Rule ID</th><th>Total Flags</th><th>Overridden / Dismissed</th><th>ROR</th><th>Diagnostic Classification</th><th>Actionable Recommendation</th></tr></thead><tbody>';
       for (const r of data.ror_report.rules_telemetry || []) {
         if (r.total_flags === 0) continue;
         let diagBadge = '<span class="tier-badge tier-pass">Healthy Rule</span>';
@@ -2001,17 +2081,18 @@ async function loadInsightsAndTelemetry(btnEl = null) {
           recHtml = `<span style="color:var(--text-secondary);"><strong>Rule is 100% accurate</strong> (0% reviewer override across ${r.total_flags} flags). Recurring initial violations indicate an opportunity for creator pre-flight templates.</span>`;
         }
         rHtml += `<tr>
-          <td><strong style="white-space:nowrap;">${escapeHtml(r.rule_id)}</strong><br/><span style="font-size:0.75rem;color:var(--text-muted);display:block;max-width:190px;line-height:1.35;word-break:break-word;">${escapeHtml(r.source_clause)}</span></td>
-          <td style="text-align:center;white-space:nowrap;">${r.total_flags}</td>
-          <td style="text-align:center;white-space:nowrap;">${r.dismissed_or_overridden}</td>
-          <td style="text-align:center;white-space:nowrap;"><strong style="font-size:0.92rem;color:${r.ror > 0.45 ? '#fca5a5' : '#86efac'};">${(r.ror * 100).toFixed(1)}%</strong></td>
+          <td style="white-space:nowrap;"><strong>${escapeHtml(r.rule_id)}</strong><br/><span style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(r.source_clause)}</span></td>
+          <td>${r.total_flags}</td>
+          <td>${r.dismissed_or_overridden}</td>
+          <td><strong>${(r.ror * 100).toFixed(1)}%</strong></td>
           <td style="white-space:nowrap;">${diagBadge}</td>
-          <td style="line-height:1.45;">${recHtml}</td>
+          <td>${recHtml}</td>
         </tr>`;
       }
       rHtml += "</tbody></table>";
       rBox.innerHTML = rHtml;
     }
+    scheduleWorkflowConnectors();
   } catch (err) {
     console.error("Error loading insights:", err);
   } finally {
@@ -2046,33 +2127,33 @@ async function loadAuditLedger(btnEl = null) {
     }
 
     // Update top navbar chain badge as well
-    const navBadge = document.getElementById("chain-status-badge");
-    if (navBadge) {
-      navBadge.innerHTML = cv.valid
-        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-champagne)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span style="font-size: 0.74rem; color: var(--text-secondary);">Chain Verified</span>`
-        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><span style="font-size: 0.74rem; color: #fca5a5; font-weight: 600;">Tamper Alert!</span>`;
-    }
+    updateTopChainBadge(Boolean(cv.valid), cv.total_events);
 
     const brokenId = cv.broken_at_id || (cv.broken_links && cv.broken_links.length > 0 ? cv.broken_links[0].id : null);
     const brokenInfo = (cv.broken_links && cv.broken_links.length > 0) ? cv.broken_links[0] : null;
     const sumBox = document.getElementById("audit-chain-summary-box");
     if (sumBox) {
       if (cv.valid) {
-        sumBox.innerHTML = `<div class="diff-box" style="border-color:#22c55e;background:rgba(34,197,94,0.06);">
-          <strong>Cryptographic Hash-Chain Status:</strong> <span style="color:#86efac;font-weight:600;">&#10003; 100% INTACT &amp; TAMPER-FREE</span> &bull;
-          Total Chained Events: <strong>${cv.total_events}</strong> &bull;
-          Head SHA-256: <code>${escapeHtml((cv.latest_hash || "").slice(0, 24))}...</code>
+        sumBox.innerHTML = `<div class="audit-chain-status-banner">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="audit-chain-header-text">Cryptographic Hash-Chain Status:</span>
+            <span class="audit-intact-badge"><span class="check-icon">&#10003;</span> 100% INTACT &amp; TAMPER-FREE</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-family:var(--font-header);font-size:0.84rem;color:#E2E8F0;">Total Chained Events: <strong style="color:#FFFFFF;">${cv.total_events}</strong></span>
+            <span class="data-chip" title="Latest Block Hash: ${escapeHtml(cv.latest_hash || "")}">Head SHA-256: ${escapeHtml((cv.latest_hash || "").slice(0, 16))}...</span>
+          </div>
         </div>`;
       } else {
         const hashMismatchText = brokenInfo
           ? `Expected SHA-256 ${brokenInfo.actual_hash.slice(0, 12)}... != Recomputed ${brokenInfo.expected_hash.slice(0, 12)}...`
           : "Payload hash mismatch";
-        sumBox.innerHTML = `<div class="diff-box" style="border-color:#ef4444;background:rgba(239,68,68,0.14);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        sumBox.innerHTML = `<div class="diff-box" style="border:1px solid #731A25;background:linear-gradient(180deg, rgba(58, 18, 24, 0.72) 0%, rgba(36, 12, 16, 0.88) 100%);border-radius:9px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:14px 18px;">
           <div>
-            <strong style="color:#fca5a5;">&#9888; CRYPTOGRAPHIC TAMPERING DETECTED:</strong>
-            <span style="color:#ffffff;font-weight:600;margin-left:6px;">Block #${escapeHtml(brokenId)} failed SHA-256 verification (${escapeHtml(hashMismatchText)})!</span>
+            <strong style="color:#FECACA;font-family:var(--font-header);">&#9888; CRYPTOGRAPHIC TAMPERING DETECTED:</strong>
+            <span style="color:#F1F5F9;font-weight:500;margin-left:6px;">Block #${escapeHtml(brokenId)} failed SHA-256 verification (${escapeHtml(hashMismatchText)})!</span>
           </div>
-          <button type="button" class="btn btn-success btn-sm" onclick="restoreTamperedChain(this)">Restore Intact Chain Now</button>
+          <button type="button" class="btn btn-banner-preset" onclick="restoreTamperedChain(this)">Restore Intact Chain Now</button>
         </div>`;
       }
     }
@@ -2082,14 +2163,40 @@ async function loadAuditLedger(btnEl = null) {
       for (const e of data.events || []) {
         const dObj = e.details || {};
         const isBrokenRow = !cv.valid && brokenId === e.id;
-        const summaryPairs = Object.entries(dObj)
-          .map(([k, v]) => `${escapeHtml(k)}: <code>${escapeHtml(String(v).length > 22 ? String(v).slice(0, 18) + "..." : String(v))}</code>`)
-          .join(" &bull; ");
+        
+        const cleanDetails = [];
+        if (dObj.overall_verdict) cleanDetails.push(`Verdict: ${dObj.overall_verdict}`);
+        if (dObj.assigned_role) cleanDetails.push(`Assigned: ${dObj.assigned_role}`);
+        if (dObj.channel) cleanDetails.push(`Channel: ${dObj.channel}`);
+        if (dObj.findings_count !== undefined) cleanDetails.push(`Findings: ${dObj.findings_count}`);
+        if (dObj.decision) cleanDetails.push(`Decision: ${dObj.decision}`);
+        if (dObj.actor_role) cleanDetails.push(`Role: ${dObj.actor_role}`);
+        if (dObj.rule_id) cleanDetails.push(`Rule: ${dObj.rule_id}`);
+        if (dObj.fact_id) cleanDetails.push(`Fact: ${dObj.fact_id}`);
+        if (dObj.subject) cleanDetails.push(`Subject: ${dObj.subject}`);
+        if (dObj.new_status) cleanDetails.push(`Status: ${dObj.new_status}`);
+        if (cleanDetails.length === 0) {
+          for (const [k, v] of Object.entries(dObj).slice(0, 3)) {
+            if (k.includes("hash") || k.includes("sha")) continue;
+            cleanDetails.push(`${k}: ${v}`);
+          }
+        }
+        const detailsHtml = cleanDetails
+          .map((item) => `<span class="data-chip" style="font-size:0.72rem;padding:1px 6px;margin:2px 3px 2px 0;">${escapeHtml(item)}</span>`)
+          .join(" ");
+
         html += `<tr class="${isBrokenRow ? "row-tampered-block" : ""}">
           <td style="white-space:nowrap;"><strong>#${e.id}</strong> ${isBrokenRow ? '<span class="tier-badge tier-violation">CORRUPTED</span>' : ""}</td>
-          <td style="white-space:nowrap;"><code>${escapeHtml(e.timestamp.slice(0, 19))}Z</code></td>
+          <td style="white-space:nowrap;"><span class="data-chip">${escapeHtml(e.timestamp.slice(0, 19))}Z</span></td>
           <td style="white-space:nowrap;"><strong>${escapeHtml(e.actor_name)}</strong><br/><span style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(e.actor_role)}</span></td>
-          <td style="word-break:break-word;">${formatAuditEventBadge(e.event_type)} <span style="margin-left:6px;">on <code>${escapeHtml(e.target_id)}</code></span><br/><span style="font-size:0.8rem;color:var(--text-secondary);display:inline-block;margin-top:4px;word-break:break-all;">${summaryPairs}</span></td>
+          <td style="word-break:normal;min-width:240px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+              ${formatAuditEventBadge(e.event_type)}
+              <span style="font-size:0.82rem;color:var(--text-muted);">on</span>
+              <span class="data-chip">${escapeHtml(e.target_id)}</span>
+            </div>
+            <div style="margin-top:4px;">${detailsHtml}</div>
+          </td>
           <td class="hash-cell-wrap">
             <div class="simple-only-el">
               <span class="hash-copy-chip" title="Full SHA-256: ${escapeHtml(e.block_hash)}">
@@ -2162,400 +2269,671 @@ async function restoreTamperedChain(btnEl = null) {
   }
 }
 
-/* ========================================================================= */
-/* ROUND 3 INNOVATION HANDLERS (Fact Vault Knowledge Graph & Live Sync HUD)  */
-/* ========================================================================= */
+function initScrollAwareHeader() {
+  const header = document.querySelector(".top-header");
+  if (!header || header._hideWatcherAttached) return;
+  header._hideWatcherAttached = true;
 
-function setFactViewMode(mode) {
-  FACT_VIEW_MODE = mode;
-  const btnTable = document.getElementById("fact-view-table-btn");
-  const btnGraph = document.getElementById("fact-view-graph-btn");
-  const tableBox = document.getElementById("fact-vault-table-box");
-  const filterBar = document.getElementById("fact-filter-bar");
-  const graphCard = document.getElementById("fact-graph-view-card");
-  const oldContainer = document.getElementById("knowledge-graph-container");
+  let ticking = false;
 
-  if (btnTable) btnTable.classList.toggle("active", mode === "table");
-  if (btnGraph) btnGraph.classList.toggle("active", mode === "graph");
+  const syncHeaderOnScroll = () => {
+    ticking = false;
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    header.classList.remove("header-hidden");
+    if (scrollY > 16) {
+      header.classList.add("scrolled");
+    } else {
+      header.classList.remove("scrolled");
+      header.classList.remove("header-revealed");
+    }
+  };
 
-  if (mode === "graph") {
-    if (tableBox) tableBox.classList.add("hidden");
-    if (filterBar) filterBar.classList.add("hidden");
-    if (graphCard) graphCard.classList.remove("hidden");
-    if (oldContainer) oldContainer.classList.remove("hidden");
-    loadKnowledgeGraph();
-  } else {
-    if (tableBox) tableBox.classList.remove("hidden");
-    if (filterBar) filterBar.classList.remove("hidden");
-    if (graphCard) graphCard.classList.add("hidden");
-    if (oldContainer) oldContainer.classList.add("hidden");
-  }
-}
-
-function toggleKnowledgeSyncHud() {
-  const hud = document.getElementById("knowledge-sync-hud");
-  const oldDrawer = document.getElementById("enterprise-sync-drawer");
-  if (hud) hud.classList.toggle("hidden");
-  if (oldDrawer && !hud) oldDrawer.classList.toggle("hidden");
-}
-
-function toggleEnterpriseSyncDrawer() {
-  toggleKnowledgeSyncHud();
-}
-
-function toggleKnowledgeGraphView() {
-  setFactViewMode(FACT_VIEW_MODE === "graph" ? "table" : "graph");
-}
-
-function refreshKnowledgeGraph(btnEl = null) {
-  loadKnowledgeGraph();
-}
-
-async function renderFactKnowledgeGraph() {
-  loadKnowledgeGraph();
-}
-
-function applySyncScenarioPreset() {
-  const sel = document.getElementById("sync-scenario-preset");
-  const typeSel = document.getElementById("sync-source-type");
-  const title = document.getElementById("sync-source-name");
-  const ta = document.getElementById("sync-doc-content") || document.getElementById("sync-document-text");
-  if (!sel || !ta) return;
-
-  const val = sel.value;
-  if (val === "q3_pricing") {
-    if (typeSel) typeSel.value = "confluence";
-    if (title) title.value = "Q3 2026 Curriculum Pricing & Outcomes Release";
-    ta.value = `Northwind Academy offers a 30% discount for all enterprise partners in Q4 2026.
-Data Foundations duration is 16 weeks with mandatory capstone project.
-Advanced Cloud Architecture takes 12 weeks.
-AWS Cohort achieved a 94% job placement rate according to the internal auditor.
-Cohort size is capped at 30 students per session.`;
-  } else if (val === "accreditation_soc2") {
-    if (typeSel) typeSel.value = "notion";
-    if (title) title.value = "SOC2 Type II & ISO-27001 Security Specifications";
-    ta.value = `Northwind Academy achieved SOC2 Type II compliance and ISO-27001 accreditation.
-All enterprise learner records are encrypted at rest with AES-256.
-Cryptographic audit chains maintain a dual SHA-256 Merkle block proof.
-Maximum cohort size is capped at 30 learners per session.`;
-  } else if (val === "sla_guarantee") {
-    if (typeSel) typeSel.value = "jira";
-    if (title) title.value = "99.95% Enterprise SLA & Support Matrix";
-    ta.value = `Enterprise Service Level Agreement 2026:
-Northwind Enterprise platform guarantees 99.95% uptime SLA.
-Priority support response window is 1 hour for critical incidents.
-Data Foundations takes 16 weeks to complete.`;
-  }
-}
-
-function loadPresetEnterpriseDoc(type) {
-  const sel = document.getElementById("sync-scenario-preset");
-  if (sel) {
-    if (type === "confluence") sel.value = "q3_pricing";
-    else if (type === "notion") sel.value = "accreditation_soc2";
-    else if (type === "jira") sel.value = "sla_guarantee";
-  }
-  applySyncScenarioPreset();
-}
-
-function onSyncSourceChanged() {
-  const typeSel = document.getElementById("sync-source-type");
-  if (typeSel) loadPresetEnterpriseDoc(typeSel.value);
-}
-
-async function executeEnterpriseKnowledgeSync(btnEl = null) {
-  const restoreBtn = setButtonLoading(btnEl, "Extracting Truth & Blast Radius...", true);
-  const textEl = document.getElementById("sync-doc-content") || document.getElementById("sync-document-text");
-  const nameEl = document.getElementById("sync-source-name");
-  const typeEl = document.getElementById("sync-source-type");
-  const terminal = document.getElementById("sync-hud-terminal");
-  const output = document.getElementById("sync-terminal-output");
-  const termStatus = document.getElementById("sync-terminal-status");
-  const blastBox = document.getElementById("sync-blast-radius-box");
-
-  const docText = textEl ? textEl.value.trim() : "";
-  const sourceName = nameEl ? nameEl.value.trim() : "Enterprise Knowledge Memo";
-  const sourceType = typeEl ? typeEl.value : "confluence";
-
-  if (!docText) {
-    showStatusMessage("Please provide enterprise documentation payload to sync.", true);
-    restoreBtn();
-    return;
-  }
-
-  if (terminal) terminal.classList.remove("hidden");
-  if (termStatus) {
-    termStatus.className = "tier-badge tier-human";
-    termStatus.textContent = "EXTRACTING TRUTH...";
-  }
-  if (output) {
-    output.textContent = `[INITIALIZING] Enterprise Knowledge Sync Engine v3.0.0...\n`;
-    output.textContent += `[INGESTING] Feed source: "${sourceName}" (${sourceType.toUpperCase()})\n`;
-  }
-
-  try {
-    await pauseForVisualFeedback(280);
-    const res = await fetch("/api/facts/sync-enterprise", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source_name: sourceName,
-        source_type: sourceType,
-        document_text: docText,
-        tenant: "northwind_academy",
-        auto_import_facts: true,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      if (output) output.textContent += `[ERROR] Extraction failed: ${data.detail || "Server error"}\n`;
-      if (termStatus) {
-        termStatus.className = "tier-badge tier-violation";
-        termStatus.textContent = "SYNC FAILED";
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(syncHeaderOnScroll);
       }
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "mousemove",
+    (e) => {
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      if (scrollY <= 16) return;
+      if (e.clientY <= 36) {
+        header.classList.add("header-revealed");
+      } else if (e.clientY > 88 && !header.contains(document.activeElement)) {
+        header.classList.remove("header-revealed");
+      }
+    },
+    { passive: true }
+  );
+
+  header.addEventListener("focusin", () => {
+    header.classList.add("header-revealed");
+  });
+
+  syncHeaderOnScroll();
+}
+
+/* ========================================================================= */
+/* SLEEK GLASSMORPHIC BLURRED SEMI-CURVED DROPDOWN ENHANCER                  */
+/* ========================================================================= */
+const GLASS_SELECT_VALUE_DESC = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+let ACTIVE_GLASS_SELECT = null;
+let GLASS_SELECT_GLOBAL_BOUND = false;
+
+function closeActiveGlassMenu(options = {}) {
+  if (!ACTIVE_GLASS_SELECT) return;
+  const { menu, trigger, heroPill } = ACTIVE_GLASS_SELECT;
+  if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
+  trigger.classList.remove("is-open");
+  trigger.setAttribute("aria-expanded", "false");
+  if (heroPill) heroPill.classList.remove("is-open");
+  ACTIVE_GLASS_SELECT = null;
+  if (options.restoreFocus && typeof trigger.focus === "function") {
+    trigger.focus();
+  }
+}
+
+function bindGlassSelectGlobals() {
+  if (GLASS_SELECT_GLOBAL_BOUND) return;
+  GLASS_SELECT_GLOBAL_BOUND = true;
+
+  document.addEventListener("pointerdown", (e) => {
+    if (!ACTIVE_GLASS_SELECT) return;
+    if (
+      ACTIVE_GLASS_SELECT.menu.contains(e.target) ||
+      ACTIVE_GLASS_SELECT.anchorEl.contains(e.target)
+    ) {
       return;
     }
+    closeActiveGlassMenu();
+  });
 
-    const blast = data.blast_radius || {};
-    const isHigh = blast.blast_radius_risk === "HIGH";
+  document.addEventListener("keydown", (e) => {
+    if (!ACTIVE_GLASS_SELECT) return;
+    const { menu, optionBtns } = ACTIVE_GLASS_SELECT;
+    const enabled = optionBtns.filter((btn) => !btn.disabled);
+    if (!enabled.length) return;
 
-    let log = `[INGESTION SUCCESS] Extracted ${data.extracted_count} atomic truth tuples (${data.imported_count} saved to Fact Vault).\n`;
-    log += `[PROVENANCE] Dual SHA-256 Digest: ${data.facts?.[0]?.source_sha256 || "verified"}\n`;
-    log += `[PROVENANCE] Audit Block Hash: ${data.audit_block_hash.slice(0, 32)}...\n`;
-    log += `[BLAST RADIUS] Scanned ${blast.pending_submissions_analyzed || blast.scanned_assets_count || 4} pending submissions.\n`;
-    log += `[BLAST RISK LEVEL] Queue Blast Radius: ${blast.blast_radius_risk || "LOW"} RISK (${blast.impacted_assets_count || 0} drafts impacted).\n`;
+    const currentIdx = enabled.findIndex((btn) => btn.classList.contains("is-active"));
+    if (e.key === "Escape" || e.key === "Tab") {
+      e.preventDefault();
+      closeActiveGlassMenu({ restoreFocus: true });
+      return;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const delta = e.key === "ArrowDown" ? 1 : -1;
+      const nextIdx = currentIdx === -1
+        ? (delta > 0 ? 0 : enabled.length - 1)
+        : (currentIdx + delta + enabled.length) % enabled.length;
+      enabled.forEach((b) => b.classList.remove("is-active"));
+      enabled[nextIdx].classList.add("is-active");
+      enabled[nextIdx].scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      const targetBtn = e.key === "Home" ? enabled[0] : enabled[enabled.length - 1];
+      enabled.forEach((b) => b.classList.remove("is-active"));
+      targetBtn.classList.add("is-active");
+      targetBtn.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const activeBtn = enabled[currentIdx] || menu.querySelector(".glass-select-option.is-selected");
+      if (activeBtn) activeBtn.click();
+    }
+  });
 
-    (data.facts || []).forEach((f) => {
-      log += `  -> Fact [${f.fact_id}]: ${f.subject} ${f.predicate} "${f.metric}" (valid: ${f.valid_from} to ${f.valid_until})\n`;
+  window.addEventListener(
+    "scroll",
+    (e) => {
+      if (!ACTIVE_GLASS_SELECT) return;
+      if (e.target === ACTIVE_GLASS_SELECT.menu) return;
+      closeActiveGlassMenu();
+    },
+    true
+  );
+
+  window.addEventListener("resize", () => {
+    if (ACTIVE_GLASS_SELECT) closeActiveGlassMenu();
+  });
+}
+
+function positionGlassMenu(menu, anchorEl, minWidthPx) {
+  const rect = anchorEl.getBoundingClientRect();
+  const width = Math.max(rect.width, minWidthPx);
+  const gap = 6;
+  menu.style.minWidth = `${Math.round(width)}px`;
+  menu.style.maxWidth = `${Math.max(Math.round(width), Math.min(460, window.innerWidth - 24))}px`;
+
+  const menuHeight = menu.offsetHeight || 220;
+  const menuWidth = menu.offsetWidth || width;
+  const spaceBelow = window.innerHeight - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
+
+  let top = rect.bottom + gap;
+  if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+    top = Math.max(12, rect.top - menuHeight - gap);
+  }
+  const left = Math.min(Math.max(12, rect.left), window.innerWidth - menuWidth - 12);
+
+  menu.style.top = `${Math.round(top)}px`;
+  menu.style.left = `${Math.round(left)}px`;
+}
+
+function initGlassSelects(root = document) {
+  bindGlassSelectGlobals();
+  if (!root || !root.querySelectorAll) return;
+
+  const selects = root.querySelectorAll("select");
+  for (const sel of selects) {
+    if (sel.dataset.glassInit === "1") continue;
+    sel.dataset.glassInit = "1";
+
+    const heroPill = sel.closest(".hero-control-pill");
+    const inCopilot = Boolean(sel.closest(".copilot-panel"));
+    const isFormControl = sel.classList.contains("form-control");
+    const isInlineCompact = sel.style.width === "auto";
+
+    const wrap = document.createElement("div");
+    wrap.className = inCopilot ? "glass-select-wrap copilot-select-wrap" : "glass-select-wrap";
+    if (isFormControl && !isInlineCompact) wrap.classList.add("is-block");
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = isFormControl ? "form-control glass-select-trigger" : "glass-select-trigger";
+    if (sel.style.cssText && isInlineCompact) {
+      trigger.style.cssText = sel.style.cssText;
+    }
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    const ariaLabel = sel.getAttribute("aria-label");
+    if (ariaLabel) trigger.setAttribute("aria-label", ariaLabel);
+
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "glass-select-trigger-label";
+
+    const chevronSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chevronSvg.setAttribute("class", "glass-select-chevron");
+    chevronSvg.setAttribute("width", "14");
+    chevronSvg.setAttribute("height", "14");
+    chevronSvg.setAttribute("viewBox", "0 0 24 24");
+    chevronSvg.setAttribute("fill", "none");
+    chevronSvg.setAttribute("stroke", "currentColor");
+    chevronSvg.setAttribute("stroke-width", "2");
+    chevronSvg.setAttribute("stroke-linecap", "round");
+    chevronSvg.setAttribute("stroke-linejoin", "round");
+    chevronSvg.setAttribute("aria-hidden", "true");
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    poly.setAttribute("points", "6 9 12 15 18 9");
+    chevronSvg.appendChild(poly);
+
+    trigger.appendChild(labelSpan);
+    trigger.appendChild(chevronSvg);
+
+    const parent = sel.parentNode;
+    parent.insertBefore(wrap, sel);
+    wrap.appendChild(trigger);
+    wrap.appendChild(sel);
+
+    sel.classList.add("glass-select-native");
+    sel.tabIndex = -1;
+
+    const syncTrigger = () => {
+      const idx = sel.selectedIndex >= 0 ? sel.selectedIndex : 0;
+      const opt = sel.options[idx];
+      labelSpan.textContent = opt ? opt.textContent : "";
+      trigger.disabled = Boolean(sel.disabled);
+    };
+
+    if (GLASS_SELECT_VALUE_DESC && GLASS_SELECT_VALUE_DESC.get && GLASS_SELECT_VALUE_DESC.set) {
+      Object.defineProperty(sel, "value", {
+        configurable: true,
+        get() {
+          return GLASS_SELECT_VALUE_DESC.get.call(this);
+        },
+        set(v) {
+          GLASS_SELECT_VALUE_DESC.set.call(this, v);
+          syncTrigger();
+        },
+      });
+    }
+
+    const observer = new MutationObserver(() => syncTrigger());
+    observer.observe(sel, { childList: true, attributes: true, attributeFilter: ["disabled"] });
+    sel.addEventListener("change", syncTrigger);
+
+    if (sel.id) {
+      const assocLabel = document.querySelector(`label[for="${CSS.escape(sel.id)}"]`);
+      if (assocLabel && assocLabel.dataset.glassLabelBound !== "1") {
+        assocLabel.dataset.glassLabelBound = "1";
+        assocLabel.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (!trigger.disabled) {
+            trigger.focus();
+            trigger.click();
+          }
+        });
+      }
+    }
+
+    if (heroPill && heroPill.dataset.glassPillBound !== "1") {
+      heroPill.dataset.glassPillBound = "1";
+      heroPill.addEventListener("click", (e) => {
+        if (e.target.closest("button, label, select")) return;
+        if (!trigger.disabled) {
+          trigger.focus();
+          trigger.click();
+        }
+      });
+    }
+
+    const openMenu = () => {
+      if (trigger.disabled) return;
+      if (ACTIVE_GLASS_SELECT && ACTIVE_GLASS_SELECT.trigger === trigger) {
+        closeActiveGlassMenu({ restoreFocus: true });
+        return;
+      }
+      closeActiveGlassMenu();
+
+      const menu = document.createElement("div");
+      menu.className = inCopilot ? "glass-select-menu copilot-select-menu" : "glass-select-menu";
+      menu.setAttribute("role", "listbox");
+      if (ariaLabel) menu.setAttribute("aria-label", ariaLabel);
+
+      const currentValue = sel.value;
+      const optionBtns = [];
+
+      for (const opt of Array.from(sel.options)) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "glass-select-option";
+        item.setAttribute("role", "option");
+        item.disabled = Boolean(opt.disabled);
+
+        const isSelected = opt.value === currentValue;
+        item.setAttribute("aria-selected", isSelected ? "true" : "false");
+        if (isSelected) {
+          item.classList.add("is-selected", "is-active");
+        }
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = opt.textContent;
+        item.appendChild(textSpan);
+
+        if (isSelected) {
+          const check = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          check.setAttribute("class", "glass-select-check");
+          check.setAttribute("width", "15");
+          check.setAttribute("height", "15");
+          check.setAttribute("viewBox", "0 0 24 24");
+          check.setAttribute("fill", "none");
+          check.setAttribute("stroke", "currentColor");
+          check.setAttribute("stroke-width", "2.2");
+          check.setAttribute("stroke-linecap", "round");
+          check.setAttribute("stroke-linejoin", "round");
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+          path.setAttribute("points", "20 6 9 17 4 12");
+          check.appendChild(path);
+          item.appendChild(check);
+        }
+
+        item.addEventListener("click", () => {
+          if (item.disabled) return;
+          const changed = sel.value !== opt.value;
+          sel.value = opt.value;
+          syncTrigger();
+          closeActiveGlassMenu({ restoreFocus: true });
+          if (changed) {
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+
+        menu.appendChild(item);
+        optionBtns.push(item);
+      }
+
+      document.body.appendChild(menu);
+      trigger.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      if (heroPill) heroPill.classList.add("is-open");
+
+      const anchorEl = heroPill || trigger;
+      positionGlassMenu(menu, anchorEl, heroPill ? 196 : 160);
+
+      ACTIVE_GLASS_SELECT = { menu, trigger, heroPill, anchorEl, optionBtns };
+    };
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openMenu();
     });
 
-    if (blast.impacted_assets_count > 0) {
-      log += `[IMPACTED SUBMISSIONS]:\n`;
-      (blast.impacted_assets || []).forEach((a) => {
-        log += `  ⚠️ Asset ${a.asset_id} ("${a.title}"): ${a.conflict_count} conflict(s) -> Action: ${a.action_required}\n`;
-      });
-    } else {
-      log += `[INTEGRITY] ✓ Zero pending submissions invalidated by this update.\n`;
-    }
+    trigger.addEventListener("keydown", (e) => {
+      if (ACTIVE_GLASS_SELECT && ACTIVE_GLASS_SELECT.trigger === trigger) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openMenu();
+      }
+    });
 
-    if (output) output.textContent += log;
-    if (termStatus) {
-      termStatus.className = isHigh ? "tier-badge tier-violation" : "tier-badge tier-pass";
-      termStatus.textContent = `SYNC VERIFIED (${blast.blast_radius_risk || "LOW"} RISK)`;
-    }
-
-    if (blastBox) {
-      blastBox.innerHTML = `
-        <div class="diff-box" style="margin-top:10px;border-left: 3px solid ${isHigh ? '#F43F5E' : '#10B981'};">
-          <strong>Enterprise Sync Result:</strong> ${data.extracted_count} facts extracted. Queue blast-radius: <strong>${blast.blast_radius_risk}</strong> risk (${blast.impacted_assets_count || 0} pending drafts impacted).
-        </div>
-      `;
-    }
-
-    showStatusMessage(`Synced ${data.extracted_count} facts from "${sourceName}". Blast-radius evaluated: ${blast.blast_radius_risk} risk.`);
-    await loadFactVault();
-    if (FACT_VIEW_MODE === "graph") {
-      await loadKnowledgeGraph();
-    }
-  } catch (err) {
-    if (output) output.textContent += `[CRITICAL ERROR] ${err.message}\n`;
-    showStatusMessage(`Sync error: ${err.message}`, true);
-  } finally {
-    restoreBtn();
+    syncTrigger();
   }
 }
 
-async function loadKnowledgeGraph() {
-  try {
-    const res = await fetch("/api/facts/graph?tenant=northwind_academy");
-    if (!res.ok) return;
-    const data = await res.json();
-    KNOWLEDGE_GRAPH_DATA = data;
-    drawKnowledgeGraph(data);
-  } catch (err) {
-    console.error("Failed to load knowledge graph:", err);
+/* ========================================================================= */
+/* CURVED SVG WORKFLOW CONNECTORS (Step 1 -> Step 2 -> Step 3)               */
+/* ========================================================================= */
+let WORKFLOW_CONNECTOR_RAF = null;
+
+function buildCurvedConnectorPath(x1, y1, x2, y2, cFrom, cTo, sideBySide, panelWidth) {
+  if (!sideBySide) {
+    const startX = Math.round(x1);
+    const endX = Math.round(x2);
+    const startY = Math.round(y1);
+    const endY = Math.round(y2);
+    const dy = endY - startY;
+    if (dy < 20) return null;
+
+    if (Math.abs(endX - startX) < 14) {
+      const swing = Math.min(34, Math.max(18, panelWidth * 0.048));
+      return `M ${startX} ${startY} C ${(startX + swing).toFixed(1)} ${(startY + dy * 0.34).toFixed(1)}, ${(endX - swing * 0.55).toFixed(1)} ${(startY + dy * 0.68).toFixed(1)}, ${endX} ${endY}`;
+    }
+
+    const midY = (startY + endY) / 2;
+    return `M ${startX} ${startY} C ${startX} ${midY.toFixed(1)}, ${endX} ${midY.toFixed(1)}, ${endX} ${endY}`;
   }
+
+  const corridorTop = Math.max(y1 + 24, cFrom.bottom + 18);
+  const corridorBot = Math.min(y2 - 18, cTo.top - 18);
+  let midY = (corridorTop + corridorBot) / 2;
+  if (corridorBot < corridorTop) {
+    midY = (y1 + y2) / 2;
+  }
+
+  const dx = x2 - x1;
+  const dir = dx >= 0 ? 1 : -1;
+  const dyTop = Math.max(0, midY - y1);
+  const dyBot = Math.max(0, y2 - midY);
+  const baseCurve = Math.min(Math.max(panelWidth * 0.072, 36), 92);
+  const rTop = Math.min(baseCurve * 1.15, Math.abs(dx) * 0.40, dyTop * 0.65);
+  const rBot = Math.min(baseCurve * 0.90, Math.abs(dx) * 0.34, dyBot * 0.85);
+
+  if (rTop < 10 || rBot < 10 || dyTop <= rTop || dyBot <= rBot) {
+    return `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${x1.toFixed(1)} ${midY.toFixed(1)}, ${x2.toFixed(1)} ${midY.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  }
+
+  const k = 0.56;
+  const xStartCurve = x1 + dir * rTop;
+  const xEndCurve = x2 - dir * rBot;
+  return [
+    `M ${x1.toFixed(1)} ${y1.toFixed(1)}`,
+    `L ${x1.toFixed(1)} ${(midY - rTop).toFixed(1)}`,
+    `C ${x1.toFixed(1)} ${(midY - rTop * k).toFixed(1)}, ${(x1 + dir * rTop * k).toFixed(1)} ${midY.toFixed(1)}, ${xStartCurve.toFixed(1)} ${midY.toFixed(1)}`,
+    `L ${xEndCurve.toFixed(1)} ${midY.toFixed(1)}`,
+    `C ${(x2 - dir * rBot * k).toFixed(1)} ${midY.toFixed(1)}, ${x2.toFixed(1)} ${(midY + rBot * k).toFixed(1)}, ${x2.toFixed(1)} ${(midY + rBot).toFixed(1)}`,
+    `L ${x2.toFixed(1)} ${y2.toFixed(1)}`,
+  ].join(" ");
 }
 
-function drawKnowledgeGraph(data, highlightedNodeId = null) {
-  const canvas = document.getElementById("fact-knowledge-graph-canvas");
-  if (!canvas || !data) return;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+const SHOWCASE_CONNECTOR_SPECS = [
+  {
+    panelId: "panel-workbench",
+    svgId: "workflow-step-connectors",
+    pairs: [
+      ["showcase-step-1", "showcase-step-2", "conn-grad-12"],
+      ["showcase-step-2", "showcase-step-3", "conn-grad-23"],
+      ["showcase-step-3", "showcase-step-4", "conn-grad-34"],
+    ],
+  },
+  {
+    panelId: "panel-visual",
+    svgId: "visual-step-connectors",
+    pairs: [["visual-step-1", "visual-step-2", "conn-vis-12"]],
+  },
+  {
+    panelId: "panel-guidelines",
+    svgId: "guidelines-step-connectors",
+    pairs: [
+      ["guidelines-step-1", "guidelines-step-2", "conn-gdl-12"],
+      ["guidelines-step-2", "guidelines-step-3", "conn-gdl-23"],
+    ],
+  },
+  {
+    panelId: "panel-insights",
+    svgId: "insights-step-connectors",
+    pairs: [["insights-step-1", "insights-step-2", "conn-ins-12"]],
+  },
+];
 
-  const nodes = data.nodes || [];
-  const edges = data.edges || [];
-  if (nodes.length === 0) {
-    ctx.fillStyle = "#94A3B8";
-    ctx.font = "14px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("No atomic facts in vault.", canvas.width / 2, canvas.height / 2);
+function renderPanelShowcaseConnectors(panel, svg, pairs) {
+  if (!panel || !svg) return;
+
+  if (panel.classList.contains("hidden") || panel.offsetParent === null) {
+    svg.innerHTML = "";
     return;
   }
 
-  // Calculate layout coordinates
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-  const radiusX = canvas.width * 0.38;
-  const radiusY = canvas.height * 0.38;
+  const panelRect = panel.getBoundingClientRect();
+  if (panelRect.width < 100 || panelRect.height < 100) return;
 
-  const subjects = nodes.filter((n) => n.type === "subject");
-  const facts = nodes.filter((n) => n.type === "fact");
+  const toLocal = (el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      left: r.left - panelRect.left,
+      right: r.right - panelRect.left,
+      top: r.top - panelRect.top,
+      bottom: r.bottom - panelRect.top,
+      width: r.width,
+      height: r.height,
+    };
+  };
 
-  nodes.forEach((node) => {
-    if (!node.x || !node.y) {
-      if (node.type === "subject") {
-        const sIdx = subjects.indexOf(node);
-        const angle = (sIdx / Math.max(1, subjects.length)) * Math.PI - Math.PI / 2;
-        node.x = centerX - radiusX * 0.5 + 40 * Math.cos(angle);
-        node.y = centerY + radiusY * 0.8 * Math.sin(angle);
-      } else {
-        const fIdx = facts.indexOf(node);
-        const angle = (fIdx / Math.max(1, facts.length)) * 2 * Math.PI;
-        node.x = centerX + radiusX * 0.75 * Math.cos(angle);
-        node.y = centerY + radiusY * 0.75 * Math.sin(angle);
-      }
+  svg.setAttribute("viewBox", `0 0 ${Math.round(panelRect.width)} ${Math.round(panelRect.height)}`);
+  svg.setAttribute("shape-rendering", "geometricPrecision");
+  const svgNs = "http://www.w3.org/2000/svg";
+  const defs = document.createElementNS(svgNs, "defs");
+
+  const glowFilterId = `${svg.id}-glow`;
+  const glowFilter = document.createElementNS(svgNs, "filter");
+  glowFilter.setAttribute("id", glowFilterId);
+  glowFilter.setAttribute("filterUnits", "userSpaceOnUse");
+  glowFilter.setAttribute("x", "0");
+  glowFilter.setAttribute("y", "0");
+  glowFilter.setAttribute("width", String(Math.round(panelRect.width)));
+  glowFilter.setAttribute("height", String(Math.round(panelRect.height)));
+  const blur = document.createElementNS(svgNs, "feGaussianBlur");
+  blur.setAttribute("in", "SourceGraphic");
+  blur.setAttribute("stdDeviation", "4.5");
+  glowFilter.appendChild(blur);
+  defs.appendChild(glowFilter);
+
+  const frag = document.createDocumentFragment();
+  frag.appendChild(defs);
+
+  for (const [fromId, toId, gradId] of pairs) {
+    const fromBand = document.getElementById(fromId);
+    const toBand = document.getElementById(toId);
+    if (!fromBand || !toBand) continue;
+
+    const gFromEl = fromBand.querySelector(".step-guidance-col");
+    const cFromEl = fromBand.querySelector(".step-box-col");
+    const lToEl = toBand.querySelector(".step-outer-label");
+    const cToEl = toBand.querySelector(".step-box-col");
+    if (!gFromEl || !cFromEl || !lToEl || !cToEl) continue;
+
+    const gFrom = toLocal(gFromEl);
+    const cFrom = toLocal(cFromEl);
+    const lTo = toLocal(lToEl);
+    const cTo = toLocal(cToEl);
+
+    const sideBySide = Math.abs(gFrom.left - cFrom.left) > 100;
+    const toStacked = toBand.classList.contains("showcase-stacked");
+    const x1 = sideBySide
+      ? gFrom.left + Math.min(64, gFrom.width * 0.18)
+      : cFrom.left + Math.min(44, cFrom.width * 0.08);
+    const y1 = sideBySide ? gFrom.bottom + 24 : cFrom.bottom + 14;
+    const x2 = toStacked
+      ? lTo.left + lTo.width / 2
+      : (sideBySide
+          ? lTo.left + Math.min(54, Math.max(120, lTo.width) * 0.16)
+          : lTo.left + Math.min(44, Math.max(120, lTo.width) * 0.08));
+    const y2 = lTo.top - 16;
+
+    const d = buildCurvedConnectorPath(x1, y1, x2, y2, cFrom, cTo, sideBySide, panelRect.width);
+    if (!d) continue;
+
+    const grad = document.createElementNS(svgNs, "linearGradient");
+    grad.setAttribute("id", gradId);
+    grad.setAttribute("gradientUnits", "userSpaceOnUse");
+    grad.setAttribute("x1", x1.toFixed(1));
+    grad.setAttribute("y1", y1.toFixed(1));
+    grad.setAttribute("x2", x2.toFixed(1));
+    grad.setAttribute("y2", y2.toFixed(1));
+
+    const stops = [
+      ["0%", "#6F82A6", "0.62"],
+      ["28%", "#8979A8", "0.78"],
+      ["56%", "#9F8490", "0.82"],
+      ["82%", "#7C9C97", "0.86"],
+      ["100%", "#BCC8DA", "0.94"],
+    ];
+    for (const [offset, color, opacity] of stops) {
+      const stop = document.createElementNS(svgNs, "stop");
+      stop.setAttribute("offset", offset);
+      stop.setAttribute("stop-color", color);
+      stop.setAttribute("stop-opacity", opacity);
+      grad.appendChild(stop);
     }
-  });
+    defs.appendChild(grad);
 
-  // Draw connecting edges
-  edges.forEach((edge) => {
-    const source = nodes.find((n) => n.id === edge.source);
-    const target = nodes.find((n) => n.id === edge.target);
-    if (!source || !target) return;
+    const dotGlow = document.createElementNS(svgNs, "circle");
+    dotGlow.setAttribute("cx", x1.toFixed(1));
+    dotGlow.setAttribute("cy", y1.toFixed(1));
+    dotGlow.setAttribute("r", "6");
+    dotGlow.setAttribute("fill", "rgba(111, 130, 166, 0.35)");
+    dotGlow.setAttribute("filter", `url(#${glowFilterId})`);
+    frag.appendChild(dotGlow);
 
-    const isExpired = edge.status === "EXPIRED" || (target && target.status === "EXPIRED");
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(source.x, source.y);
-    ctx.lineTo(target.x, target.y);
-    ctx.strokeStyle = isExpired ? "rgba(244, 63, 94, 0.45)" : "rgba(16, 185, 129, 0.4)";
-    ctx.lineWidth = isExpired ? 1.5 : 2;
-    if (isExpired) ctx.setLineDash([4, 4]);
-    ctx.stroke();
+    const dot = document.createElementNS(svgNs, "circle");
+    dot.setAttribute("cx", x1.toFixed(1));
+    dot.setAttribute("cy", y1.toFixed(1));
+    dot.setAttribute("r", "3");
+    dot.setAttribute("fill", "#8E9FBF");
+    frag.appendChild(dot);
 
-    // Relationship predicate label
-    if (edge.label) {
-      const midX = (source.x + target.x) / 2;
-      const midY = (source.y + target.y) / 2;
-      ctx.fillStyle = "#94A3B8";
-      ctx.font = "10px Inter, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(edge.label, midX, midY - 4);
-    }
-    ctx.restore();
-  });
+    const halo = document.createElementNS(svgNs, "path");
+    halo.setAttribute("d", d);
+    halo.setAttribute("fill", "none");
+    halo.setAttribute("stroke", `url(#${gradId})`);
+    halo.setAttribute("stroke-opacity", "0.52");
+    halo.setAttribute("stroke-width", "5.2");
+    halo.setAttribute("stroke-linecap", "round");
+    halo.setAttribute("stroke-linejoin", "round");
+    halo.setAttribute("filter", `url(#${glowFilterId})`);
+    frag.appendChild(halo);
 
-  // Draw nodes
-  nodes.forEach((node) => {
-    const isHighlighted = highlightedNodeId && node.id === highlightedNodeId;
-    const isSubj = node.type === "subject";
-    const isExpired = node.status === "EXPIRED";
+    const path = document.createElementNS(svgNs, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", `url(#${gradId})`);
+    path.setAttribute("stroke-width", "1.65");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    frag.appendChild(path);
 
-    let fill = "#38BDF8"; // Cyan for Entity Subject
-    if (!isSubj) {
-      fill = isExpired ? "#F43F5E" : "#10B981"; // Rose for Expired, Emerald for Active
-    }
+    const arrowD = `M ${(x2 - 5.5).toFixed(1)} ${(y2 - 6.5).toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)} L ${(x2 + 5.5).toFixed(1)} ${(y2 - 6.5).toFixed(1)}`;
+    const arrowHalo = document.createElementNS(svgNs, "path");
+    arrowHalo.setAttribute("d", arrowD);
+    arrowHalo.setAttribute("fill", "none");
+    arrowHalo.setAttribute("stroke", "#BCC8DA");
+    arrowHalo.setAttribute("stroke-opacity", "0.45");
+    arrowHalo.setAttribute("stroke-width", "4.5");
+    arrowHalo.setAttribute("stroke-linecap", "round");
+    arrowHalo.setAttribute("stroke-linejoin", "round");
+    arrowHalo.setAttribute("filter", `url(#${glowFilterId})`);
+    frag.appendChild(arrowHalo);
 
-    ctx.save();
-    ctx.beginPath();
-    const nodeRadius = isSubj ? (isHighlighted ? 20 : 16) : (isHighlighted ? 16 : 12);
-    ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = fill;
-    ctx.shadowColor = fill;
-    ctx.shadowBlur = isHighlighted ? 18 : 8;
-    ctx.fill();
+    const arrow = document.createElementNS(svgNs, "path");
+    arrow.setAttribute("d", arrowD);
+    arrow.setAttribute("fill", "none");
+    arrow.setAttribute("stroke", "#CED7E5");
+    arrow.setAttribute("stroke-opacity", "0.94");
+    arrow.setAttribute("stroke-width", "1.75");
+    arrow.setAttribute("stroke-linecap", "round");
+    arrow.setAttribute("stroke-linejoin", "round");
+    frag.appendChild(arrow);
+  }
 
-    ctx.strokeStyle = isHighlighted ? "#FFFFFF" : "#0F172A";
-    ctx.lineWidth = isHighlighted ? 3 : 2;
-    ctx.stroke();
+  svg.innerHTML = "";
+  svg.appendChild(frag);
+}
 
-    // Text label
-    ctx.fillStyle = "#F8FAFC";
-    ctx.font = isSubj ? "bold 11px Inter, sans-serif" : "10px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(node.label || node.id, node.x, node.y + (isSubj ? 26 : 22));
-    ctx.restore();
-  });
-
-  // Attach interactive hover and click listeners once
-  if (!canvas._listenersAttached) {
-    canvas._listenersAttached = true;
-    canvas.addEventListener("mousemove", (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const mouseX = (e.clientX - rect.left) * scaleX;
-      const mouseY = (e.clientY - rect.top) * scaleY;
-
-      const hoveredNode = (KNOWLEDGE_GRAPH_DATA?.nodes || []).find((n) => {
-        const dx = n.x - mouseX;
-        const dy = n.y - mouseY;
-        return Math.sqrt(dx * dx + dy * dy) <= 22;
-      });
-
-      if (hoveredNode) {
-        canvas.style.cursor = "pointer";
-        drawKnowledgeGraph(KNOWLEDGE_GRAPH_DATA, hoveredNode.id);
-        renderNodeDetails(hoveredNode);
-      } else {
-        canvas.style.cursor = "crosshair";
-      }
-    });
-
-    canvas.addEventListener("click", (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const mouseX = (e.clientX - rect.left) * scaleX;
-      const mouseY = (e.clientY - rect.top) * scaleY;
-
-      const clickedNode = (KNOWLEDGE_GRAPH_DATA?.nodes || []).find((n) => {
-        const dx = n.x - mouseX;
-        const dy = n.y - mouseY;
-        return Math.sqrt(dx * dx + dy * dy) <= 22;
-      });
-
-      if (clickedNode) {
-        drawKnowledgeGraph(KNOWLEDGE_GRAPH_DATA, clickedNode.id);
-        renderNodeDetails(clickedNode);
-      }
-    });
+function updateWorkflowConnectors() {
+  for (const spec of SHOWCASE_CONNECTOR_SPECS) {
+    renderPanelShowcaseConnectors(
+      document.getElementById(spec.panelId),
+      document.getElementById(spec.svgId),
+      spec.pairs
+    );
   }
 }
 
-function renderNodeDetails(node) {
-  const detailsBox = document.getElementById("graph-node-details");
-  if (!detailsBox || !node) return;
-  const isSubj = node.type === "subject";
-  const isExpired = node.status === "EXPIRED";
-  const statusBadge = isSubj
-    ? '<span class="tier-badge tier-human">Entity Subject</span>'
-    : (isExpired ? '<span class="tier-badge tier-violation">Expired Fact</span>' : '<span class="tier-badge tier-pass">Active Fact</span>');
-
-  detailsBox.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-      <div>
-        <strong style="color:var(--text-primary);font-size:0.95rem;">${escapeHtml(node.label || node.id)}</strong>
-        <span style="font-size:0.8rem;color:var(--text-muted);margin-left:8px;">ID: <code>${escapeHtml(node.id)}</code></span>
-      </div>
-      ${statusBadge}
-    </div>
-    <div style="font-size:0.84rem;color:var(--text-secondary);margin-top:6px;">
-      ${node.statement ? `<strong>Statement:</strong> ${escapeHtml(node.statement)}<br/>` : ""}
-      ${node.valid_from ? `<strong>Validity Window:</strong> <code>${escapeHtml(node.valid_from)}</code> to <code>${escapeHtml(node.valid_until)}</code> &bull; ` : ""}
-      ${node.provenance_hash ? `<strong>SHA-256 Provenance:</strong> <code>${escapeHtml(node.provenance_hash.slice(0, 24))}...</code>` : ""}
-    </div>
-  `;
+function scheduleWorkflowConnectors() {
+  if (WORKFLOW_CONNECTOR_RAF) cancelAnimationFrame(WORKFLOW_CONNECTOR_RAF);
+  WORKFLOW_CONNECTOR_RAF = requestAnimationFrame(() => {
+    WORKFLOW_CONNECTOR_RAF = null;
+    updateWorkflowConnectors();
+  });
 }
 
+function initWorkflowConnectors() {
+  const flows = document.querySelectorAll(".workbench-editorial-flow");
+  if (!flows.length) return;
+
+  if (typeof ResizeObserver === "function") {
+    const ro = new ResizeObserver(() => scheduleWorkflowConnectors());
+    ro.observe(document.body);
+    for (const panel of flows) {
+      ro.observe(panel);
+      for (const band of panel.querySelectorAll(".showcase-band-16x9, .showcase-band-inner, .step-box-col, .step-guidance-col")) {
+        ro.observe(band);
+      }
+    }
+  }
+
+  window.addEventListener("resize", scheduleWorkflowConnectors, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", scheduleWorkflowConnectors, { passive: true });
+  }
+  for (const panel of flows) {
+    panel.addEventListener("toggle", scheduleWorkflowConnectors, true);
+    panel.addEventListener("transitionend", scheduleWorkflowConnectors, true);
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(scheduleWorkflowConnectors).catch(() => {});
+  }
+  scheduleWorkflowConnectors();
+}
 
 window.addEventListener("DOMContentLoaded", async () => {
+  initScrollAwareHeader();
+  initGlassSelects(document);
+  resetAllInputsToDefault();
+  initWorkflowConnectors();
   const roleEl = document.getElementById("active-role-select");
   if (roleEl) roleEl.value = "Creator";
-  renderMustKeepChips();
   updateAvatarInitials(document.getElementById("actor-name-input")?.value || "Nandha K");
   setDetailMode("simple");
-  await loadPresets();
-  await loadSubmissionsQueue();
+  await Promise.all([loadPresets(), syncTopChainBadge()]);
+  scheduleWorkflowConnectors();
 });

@@ -122,6 +122,8 @@ class AssetApprovalSchema(BaseModel):
     comment: str = ""
     actor_name: str = "Manager User"
     actor_role: str = "Brand Manager"
+    demo_override_sod: bool = False
+    current_sha256: Optional[str] = None
 
 
 class PolicyReplayRequestSchema(BaseModel):

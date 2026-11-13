@@ -31,4 +31,6 @@ class AssetModel(Base):
     rule_set_version = Column(String(32), default="v1.0.0")
     receipt_json = Column(Text, default="{}")
     revisions_json = Column(Text, default="[]")
+    created_by_actor = Column(String(128), default="Creator")
+    last_modified_by_actor = Column(String(128), default="Creator")
     created_at = Column(String(64), nullable=False)

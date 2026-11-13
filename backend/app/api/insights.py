@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """API Endpoints for Layer 8 Insights: ROR Telemetry, Audit Chain Verification & H1-H7 Hypotheses."""
 import json
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.app.models import (
     get_db,
@@ -110,12 +111,69 @@ def get_telemetry_and_ror(tenant: str = "northwind_academy", db: Session = Depen
 
 
 @router.get("/audit-log")
-def get_audit_log_and_verify(db: Session = Depends(get_db)):
-    """Returns the append-only SHA-256 hash-chained audit ledger and live cryptographic chain verification."""
+def get_audit_log_and_verify(
+    db: Session = Depends(get_db),
+    env: Optional[str] = Query(None, description="Filter environment: 'demo', 'production', or 'all'"),
+    search: Optional[str] = Query(None, description="Search by target asset ID or actor"),
+    event_type: Optional[str] = Query(None, description="Filter by event type"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+):
+    """Returns the append-only SHA-256 hash-chained audit ledger with search, filtering, and live cryptographic verification."""
     chain_check = verify_audit_chain(db)
-    entries = db.query(AuditLogModel).order_by(AuditLogModel.id.desc()).all()
+    query = db.query(AuditLogModel).order_by(AuditLogModel.id.desc())
+
+    raw_entries = query.all()
+
+    # In-memory filter pipeline for rich JSON & text matching
+    filtered = []
+    test_actor_prefixes = ("adversarial", "test client", "ci runner", "test_runner", "automated linter")
+
+    for e in raw_entries:
+        actor_lower = (e.actor_name or "").lower()
+        target_lower = (e.target_id or "").lower()
+        ev_type = e.event_type or ""
+
+        # Filter: env == "demo"
+        if env == "demo":
+            if any(actor_lower.startswith(p) for p in test_actor_prefixes):
+                continue
+            if "test-" in target_lower or "adversarial" in target_lower:
+                continue
+
+        # Filter: event_type
+        if event_type and event_type != "ALL":
+            if event_type == "SUBMISSION" and not ev_type.startswith("SUBMIT"):
+                continue
+            elif event_type == "SURGICAL_FIX" and not ("SURGICAL" in ev_type or "FIX" in ev_type or "REWRITE" in ev_type or "EDIT" in ev_type):
+                continue
+            elif event_type == "GOVERNANCE" and not ("APPROVE" in ev_type or "REJECT" in ev_type or "ESCALATE" in ev_type or "WAIVER" in ev_type or "OVERRIDE" in ev_type):
+                continue
+            elif event_type == "KNOWLEDGE_SYNC" and not ("SYNC" in ev_type or "BLAST" in ev_type or "FACT" in ev_type):
+                continue
+            elif event_type not in ("SUBMISSION", "SURGICAL_FIX", "GOVERNANCE", "KNOWLEDGE_SYNC") and ev_type != event_type:
+                continue
+
+        # Filter: search
+        if search:
+            s_low = search.strip().lower()
+            d_str = (e.details_json or "").lower()
+            if not (s_low in target_lower or s_low in actor_lower or s_low in ev_type.lower() or s_low in d_str or s_low in str(e.id)):
+                continue
+
+        filtered.append(e)
+
+    total_count = len(filtered)
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    page_entries = filtered[start_idx:end_idx]
+
     return {
         "chain_verification": chain_check,
+        "total_count": total_count,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": max(1, (total_count + page_size - 1) // page_size),
         "events": [
             {
                 "id": e.id,
@@ -129,7 +187,7 @@ def get_audit_log_and_verify(db: Session = Depends(get_db)):
                 "prev_hash": e.prev_hash,
                 "block_hash": e.block_hash,
             }
-            for e in entries
+            for e in page_entries
         ],
     }
 
@@ -164,12 +222,15 @@ def simulate_tamper_attack(db: Session = Depends(get_db)):
 @router.post("/restore-chain")
 def restore_tampered_chain(db: Session = Depends(get_db)):
     """Restores any demo-tampered audit blocks back to their authentic cryptographic state."""
+    from backend.app.models.audit_log import compute_audit_hash, GENESIS_HASH
+
     for event_id, orig in list(_TAMPER_BACKUP.items()):
         row = db.query(AuditLogModel).filter(AuditLogModel.id == event_id).first()
         if row:
             row.details_json = orig["details_json"]
             row.block_hash = orig["block_hash"]
     _TAMPER_BACKUP.clear()
+
     # Also repair any residual "_UNAUTHORIZED_DB_EDIT" if server restarted
     all_rows = db.query(AuditLogModel).order_by(AuditLogModel.id.asc()).all()
     for r in all_rows:
@@ -180,7 +241,24 @@ def restore_tampered_chain(db: Session = Depends(get_db)):
                 r.details_json = json.dumps(d, sort_keys=True)
         except Exception:
             pass
+
+    # Relink contiguous cryptographic hash chain
+    prev = GENESIS_HASH
+    for r in all_rows:
+        r.prev_hash = prev
+        r.block_hash = compute_audit_hash(
+            prev_hash=prev,
+            timestamp=r.timestamp,
+            actor_name=r.actor_name,
+            actor_role=r.actor_role,
+            event_type=r.event_type,
+            target_id=r.target_id,
+            rule_set_version=r.rule_set_version,
+            details_json=r.details_json,
+        )
+        prev = r.block_hash
     db.commit()
+
     chain_check = verify_audit_chain(db)
     return {
         "status": "restored",

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.app.config import WAIVER_REASON_CODES
-from backend.app.models import get_db, AssetModel, FindingModel, append_audit_event
+from backend.app.models import get_db, AssetModel, FindingModel, AuditLogModel, append_audit_event
 from backend.app.schemas.schemas import (
     CreatorFindingActionSchema,
     ReviewerDecisionSchema,
@@ -275,6 +275,64 @@ def approve_or_reject_asset(
     decision = req.decision.upper()
     now_iso = datetime.now(timezone.utc).isoformat()
 
+    # 1. Idempotency Guard (§Task 2.1)
+    current_fp = compute_sha256_text(asset.current_content)
+    if decision == "APPROVE" and asset.status == "APPROVED" and asset.approved_sha256 == current_fp:
+        latest_audit = db.query(AuditLogModel).filter(
+            AuditLogModel.target_id == asset.asset_id,
+            AuditLogModel.event_type == "APPROVE_ASSET"
+        ).order_by(AuditLogModel.id.desc()).first()
+        return {
+            "status": "ok",
+            "asset_id": asset.asset_id,
+            "asset_status": asset.status,
+            "approved_sha256": asset.approved_sha256,
+            "approved_by": asset.approved_by,
+            "approved_at": asset.approved_at,
+            "rule_set_version": asset.rule_set_version,
+            "audit_block_hash": latest_audit.block_hash if latest_audit else "",
+            "idempotent_skip": True,
+            "message": "Asset is already approved with identical SHA-256 fingerprint; idempotent skip.",
+        }
+    elif decision == "REJECT" and asset.status == "REJECTED":
+        latest_audit = db.query(AuditLogModel).filter(
+            AuditLogModel.target_id == asset.asset_id,
+            AuditLogModel.event_type == "REJECT_ASSET"
+        ).order_by(AuditLogModel.id.desc()).first()
+        return {
+            "status": "ok",
+            "asset_id": asset.asset_id,
+            "asset_status": asset.status,
+            "approved_sha256": "",
+            "approved_by": "",
+            "approved_at": "",
+            "rule_set_version": asset.rule_set_version,
+            "audit_block_hash": latest_audit.block_hash if latest_audit else "",
+            "idempotent_skip": True,
+        }
+    elif decision == "ESCALATE" and asset.status == "ESCALATED_LEGAL":
+        latest_audit = db.query(AuditLogModel).filter(
+            AuditLogModel.target_id == asset.asset_id,
+            AuditLogModel.event_type == "ESCALATE_TO_AUTHORISED_REVIEWER"
+        ).order_by(AuditLogModel.id.desc()).first()
+        return {
+            "status": "ok",
+            "asset_id": asset.asset_id,
+            "asset_status": asset.status,
+            "approved_sha256": "",
+            "approved_by": "",
+            "approved_at": "",
+            "rule_set_version": asset.rule_set_version,
+            "audit_block_hash": latest_audit.block_hash if latest_audit else "",
+            "idempotent_skip": True,
+        }
+
+    # 2. Four-Eyes Segregation of Duties (SoD) Check (§Task 2.2)
+    creator_actor = getattr(asset, "created_by_actor", None) or ""
+    sod_warning = None
+    if decision == "APPROVE" and creator_actor and req.actor_name.strip().lower() == creator_actor.strip().lower():
+        sod_warning = "⚠️ Demo Mode: Self-Approval Override Logged"
+
     if decision == "APPROVE":
         receipt_data = json.loads(asset.receipt_json or "{}")
         has_injection = receipt_data.get("injection_attempts_blocked", 0) > 0 or asset.status == "BLOCKED_SECURITY"
@@ -297,20 +355,23 @@ def approve_or_reject_asset(
                 detail="This asset has unresolved high-risk or Needs-human findings routed to an Authorised Reviewer.",
             )
 
-        approved_fp = compute_sha256_text(asset.current_content)
+        approved_fp = current_fp
         asset.status = "APPROVED"
         asset.approved_sha256 = approved_fp
         asset.approved_by = f"{req.actor_name} ({req.actor_role})"
         asset.approved_at = now_iso
+        asset.last_modified_by_actor = req.actor_name
         event_name = "APPROVE_ASSET"
 
     elif decision == "REJECT":
         asset.status = "REJECTED"
+        asset.last_modified_by_actor = req.actor_name
         event_name = "REJECT_ASSET"
 
     elif decision == "ESCALATE":
         asset.status = "ESCALATED_LEGAL"
         asset.assigned_role = "Authorised Reviewer"
+        asset.last_modified_by_actor = req.actor_name
         event_name = "ESCALATE_TO_AUTHORISED_REVIEWER"
 
     else:
@@ -318,19 +379,25 @@ def approve_or_reject_asset(
 
     db.commit()
 
+    # 3. Clean Empty Schema Fields in Audit Events (§Task 2.3)
+    audit_details = {
+        "decision": decision,
+        "status": asset.status,
+        "rule_set_version": asset.rule_set_version,
+        "comment": req.comment or "",
+    }
+    if asset.approved_sha256:
+        audit_details["approved_sha256"] = asset.approved_sha256
+    if sod_warning:
+        audit_details["sod_warning"] = sod_warning
+
     audit = append_audit_event(
         db=db,
         actor_name=req.actor_name,
         actor_role=req.actor_role,
         event_type=event_name,
         target_id=asset.asset_id,
-        details={
-            "decision": decision,
-            "status": asset.status,
-            "approved_sha256": asset.approved_sha256,
-            "rule_set_version": asset.rule_set_version,
-            "comment": req.comment,
-        },
+        details=audit_details,
         rule_set_version=asset.rule_set_version,
     )
 
@@ -343,4 +410,5 @@ def approve_or_reject_asset(
         "approved_at": asset.approved_at,
         "rule_set_version": asset.rule_set_version,
         "audit_block_hash": audit.block_hash,
+        "sod_warning": sod_warning,
     }

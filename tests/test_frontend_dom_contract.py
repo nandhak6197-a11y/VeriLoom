@@ -1,39 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Round 3 R4 Frontend DOM and Contract Verification Test.
-Validates Obsidian & Emerald tokens, Top-Nav Jurisdiction Switcher,
-Knowledge Graph Visualizer & Live Sync HUD, Step 2 Legal Disclosure Card,
-Step 2 Logo Safe-Zone overlay, and Step 3 Certificate Download CTA.
+VeriLoom Production Platform Frontend DOM and Contract Verification Test.
+Validates Top Navigation Tabs, Review Workbench composer & file dropzone,
+Time-Bounded Fact Vault, Banner & Contrast Lab, Guideline Lab,
+SHA-256 Audit Ledger, and VeriLoom AI Copilot modal contracts.
 """
 import re
 import os
 import pytest
 
-def test_obsidian_and_emerald_tokens_in_css():
+def test_veriloom_core_tokens_in_css():
     css_path = os.path.join("frontend", "css", "styles.css")
     assert os.path.exists(css_path), "styles.css must exist"
     with open(css_path, "r", encoding="utf-8") as f:
         css = f.read()
 
-    # Core Obsidian and Emerald tokens
-    assert "--bg-canvas: #090D16" in css or "--bg-canvas: #090d16" in css.lower()
-    assert "--bg-card: #0F172A" in css or "--bg-card: #0f172a" in css.lower()
-    assert "--bg-card-elevated: #1E293B" in css or "--bg-card-elevated: #1e293b" in css.lower()
-    assert "--accent-emerald: #10B981" in css or "--accent-emerald: #10b981" in css.lower()
-    assert "--accent-amber: #F59E0B" in css or "--accent-amber: #f59e0b" in css.lower()
-    assert "--accent-rose: #F43F5E" in css or "--accent-rose: #f43f5e" in css.lower()
-
-    # Required button and component styles
-    assert ".jurisdiction-pill" in css
-    assert ".btn-emerald-glowing" in css
-    assert ".btn-cta-cert" in css
-    assert ".disclosure-card" in css
-    assert ".knowledge-sync-hud" in css
-    assert "#fact-knowledge-graph-canvas" in css
-    assert ".safe-zone-table" in css
+    # Core typography & glass design tokens
+    assert "--font-header" in css
+    assert "--font-openai-sans" in css
+    assert ".data-chip" in css
+    assert ".modality-chip" in css
+    assert ".status-toast-banner" in css
+    assert ".copilot-panel" in css
+    assert ".copilot-streaming-cursor" in css
 
 
-def test_top_nav_jurisdiction_switcher():
+def test_top_nav_and_tabs():
     html_path = os.path.join("frontend", "index.html")
     js_path = os.path.join("frontend", "js", "app.js")
     with open(html_path, "r", encoding="utf-8") as f:
@@ -41,18 +33,27 @@ def test_top_nav_jurisdiction_switcher():
     with open(js_path, "r", encoding="utf-8") as f:
         js = f.read()
 
-    assert 'id="active-jurisdiction-select"' in html
-    assert 'value="US"' in html
-    assert 'value="EU"' in html
-    assert 'value="UK"' in html
-    assert 'value="GLOBAL"' in html or 'value="Global"' in html
+    # Navigation tabs
+    assert 'id="tab-btn-workbench"' in html
+    assert 'id="tab-btn-visual"' in html
+    assert 'id="tab-btn-guidelines"' in html
+    assert 'id="tab-btn-facts"' in html
+    assert 'id="tab-btn-insights"' in html
+    assert 'id="tab-btn-audit"' in html
 
-    assert "let CURRENT_JURISDICTION" in js
-    assert "function onJurisdictionChanged" in js
-    assert "recompileSubmissionForJurisdiction" in js
+    # Role selector
+    assert 'id="active-role-select"' in html
+    assert 'value="Creator"' in html
+    assert 'value="Brand Manager"' in html
+    assert 'value="Authorised Reviewer"' in html
+    assert 'value="Brand Admin"' in html
+
+    assert "function switchTab" in js
+    assert "function onRoleChanged" in js
+    assert "function switchToRole" in js
 
 
-def test_fact_vault_knowledge_graph_and_live_sync_hud():
+def test_fact_vault_dom_contract():
     html_path = os.path.join("frontend", "index.html")
     js_path = os.path.join("frontend", "js", "app.js")
     with open(html_path, "r", encoding="utf-8") as f:
@@ -60,28 +61,28 @@ def test_fact_vault_knowledge_graph_and_live_sync_hud():
     with open(js_path, "r", encoding="utf-8") as f:
         js = f.read()
 
-    # Fact vault controls
-    assert 'id="fact-view-table-btn"' in html
-    assert 'id="fact-view-graph-btn"' in html
-    assert 'id="btn-sync-hud-toggle"' in html
-    assert 'id="knowledge-sync-hud"' in html
-    assert 'id="sync-source-type"' in html
-    assert 'id="sync-scenario-preset"' in html
-    assert 'id="btn-execute-sync"' in html
-    assert 'id="sync-hud-terminal"' in html
-    assert 'id="sync-terminal-output"' in html
-    assert 'id="fact-knowledge-graph-canvas"' in html
-    assert 'id="graph-node-details"' in html
+    # Hero subtitle chip
+    assert "[valid_from, valid_until]" in html
+    assert 'id="facts-hero"' in html
+    assert 'id="fact-vault-table-box"' in html
+
+    # Add fact form inputs
+    assert 'id="new-fact-id"' in html
+    assert 'id="new-fact-subject"' in html
+    assert 'id="new-fact-metric"' in html
+    assert 'id="new-fact-modality"' in html
+    assert 'id="new-fact-statement"' in html
+    assert 'id="new-fact-from"' in html
+    assert 'id="new-fact-until"' in html
 
     # JS functions
-    assert "function setFactViewMode" in js
-    assert "function toggleKnowledgeSyncHud" in js
-    assert "function executeEnterpriseKnowledgeSync" in js
-    assert "function loadKnowledgeGraph" in js
-    assert "function drawKnowledgeGraph" in js
+    assert "function loadFactVault" in js
+    assert "function submitNewFact" in js
+    assert "function toggleFactStatus" in js
+    assert "function renderFactVaultView" in js
 
 
-def test_step2_legal_disclosure_card_and_gauge():
+def test_workbench_dom_contract():
     html_path = os.path.join("frontend", "index.html")
     js_path = os.path.join("frontend", "js", "app.js")
     with open(html_path, "r", encoding="utf-8") as f:
@@ -89,20 +90,25 @@ def test_step2_legal_disclosure_card_and_gauge():
     with open(js_path, "r", encoding="utf-8") as f:
         js = f.read()
 
-    assert 'id="legal-disclosure-card"' in html
-    assert 'id="disclosure-rule-title"' in html
-    assert 'id="disclosure-channel-badge"' in html
-    assert 'id="disclosure-explanation"' in html
-    assert 'id="disclosure-text-preview"' in html
-    assert 'id="disclosure-char-count-label"' in html
-    assert 'id="disclosure-char-meter-fill"' in html
-    assert 'id="btn-inject-disclosure"' in html
+    # Draft composer and upload
+    assert 'id="sub-content"' in html
+    assert 'id="btn-verify-draft"' in html
+    assert 'id="file-upload-input"' in html
+    assert 'id="sub-intent"' in html
+    assert 'id="sub-origin"' in html
+    assert 'id="sub-channel"' in html
 
-    assert "function evaluateRegulatoryDisclosures" in js
-    assert "function injectCompliantDisclosure" in js
+    # Output areas
+    assert 'id="active-findings-list"' in html
+    assert 'id="active-submission-panel"' in html
+
+    # JS functions
+    assert "function submitContentForVerification" in js
+    assert "function uploadDocumentFile" in js
+    assert "function handleCreatorFindingAction" in js
 
 
-def test_step2_banner_safezone_overlay_and_table():
+def test_visual_and_contrast_contract():
     html_path = os.path.join("frontend", "index.html")
     js_path = os.path.join("frontend", "js", "app.js")
     with open(html_path, "r", encoding="utf-8") as f:
@@ -110,17 +116,16 @@ def test_step2_banner_safezone_overlay_and_table():
     with open(js_path, "r", encoding="utf-8") as f:
         js = f.read()
 
-    assert 'id="btn-toggle-safezone-overlay"' in html
-    assert 'id="visual-inspector-canvas"' in html
+    assert 'id="panel-visual"' in html
+    assert 'id="custom-banner-input"' in html
     assert 'id="visual-audit-results"' in html
 
-    assert "let SHOW_SAFEZONE_OVERLAY" in js
-    assert "function toggleLogoSafeZoneOverlay" in js
-    assert "function drawVisualCanvas" in js
-    assert "safe_zone_audit" in js
+    assert "function uploadCustomBannerImage" in js
+    assert "function renderVisualAuditResults" in js
+    assert "function runBannerContrastAnalysis" in js or "analyzeBannerContrast" in js or "uploadCustomBannerImage" in js
 
 
-def test_step3_download_certificate_button():
+def test_audit_ledger_dom_contract():
     html_path = os.path.join("frontend", "index.html")
     js_path = os.path.join("frontend", "js", "app.js")
     with open(html_path, "r", encoding="utf-8") as f:
@@ -128,9 +133,26 @@ def test_step3_download_certificate_button():
     with open(js_path, "r", encoding="utf-8") as f:
         js = f.read()
 
-    assert 'id="btn-download-certificate"' in html
-    assert "function downloadVerificationCertificate" in js
-    assert "/certificate" in js
+    assert 'id="btn-simulate-tamper"' in html
+    assert 'id="btn-restore-chain"' in html
+    assert 'id="audit-chain-summary-box"' in html
+    assert 'id="audit-events-table-box"' in html
+
+    assert "function loadAuditLedger" in js
+    assert "function triggerTamperSimulation" in js
+    assert "function restoreTamperedChain" in js
+
+
+def test_copilot_dom_contract():
+    html_path = os.path.join("frontend", "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    assert 'id="chatbox-overlay"' in html or 'id="copilot-overlay"' in html
+    assert 'id="copilot-close-btn"' in html
+    assert 'id="copilot-input"' in html
+    assert 'id="copilot-send-btn"' in html
+    assert 'id="copilot-messages"' in html
 
 
 def test_all_html_onclick_handlers_exist_in_js():

@@ -167,6 +167,7 @@ def build_tracked_change_diff(original_text: str, candidate_text: str) -> str:
     """
     Generates human-readable contiguous-span tracked-change markup:
       e.g. 'Our platform [-cuts onboarding time by 50%-] {+helps teams get started faster+}. Join the webinar on 12 Nov.'
+    Avoids micro-splicing inside markdown table pipe characters ('|') or whitespace.
     """
     if original_text == candidate_text:
         return original_text
@@ -176,7 +177,7 @@ def build_tracked_change_diff(original_text: str, candidate_text: str) -> str:
 
     raw_opcodes = list(difflib.SequenceMatcher(None, tokens1, tokens2).get_opcodes())
 
-    # Merge adjacent non-equal opcodes that are separated only by whitespace-only equal opcodes
+    # Merge adjacent non-equal opcodes that are separated only by whitespace or table pipe characters
     merged_opcodes = []
     idx = 0
     while idx < len(raw_opcodes):
@@ -186,7 +187,8 @@ def build_tracked_change_diff(original_text: str, candidate_text: str) -> str:
                 mid_tag, mi1, mi2, mj1, mj2 = raw_opcodes[idx + 1]
                 nxt_tag, ni1, ni2, nj1, nj2 = raw_opcodes[idx + 2]
                 mid_text = "".join(tokens1[mi1:mi2])
-                if mid_tag == "equal" and mid_text.strip() == "" and nxt_tag != "equal":
+                is_pipe_or_whitespace = mid_text.strip() == "" or "|" in mid_text or mid_text.strip() in ("-", ":")
+                if mid_tag == "equal" and is_pipe_or_whitespace and nxt_tag != "equal":
                     tag = "replace"
                     i2 = ni2
                     j2 = nj2
@@ -285,6 +287,7 @@ def generate_surgical_suggestion(
     lock_check = check_must_keep_points(full_text, candidate_full, must_keep_points)
     regenerated_due_to_lock = False
 
+    safe_replacement = replacement_span
     if not lock_check["all_preserved"]:
         # §4.5.2(a): Reject candidate that drops a must-keep point and regenerate preserving all must-keep points!
         regenerated_due_to_lock = True
@@ -296,7 +299,18 @@ def generate_surgical_suggestion(
         lock_check = check_must_keep_points(full_text, candidate_full, must_keep_points)
 
     ipm_metrics = compute_ipm_score(full_text, candidate_full)
-    tracked = build_tracked_change_diff(full_text, candidate_full)
+
+    # Clean sentence/table level diff: If span contains markdown table pipe syntax ('|') or multiline table rows,
+    # avoid token-level fragmentation across pipe characters and produce clean contiguous markup.
+    if "|" in span or "\n" in span:
+        span_start = full_text.find(span)
+        if span_start != -1:
+            span_end = span_start + len(span)
+            tracked = f"{full_text[:span_start]}[-{span.strip()}-] {{+{safe_replacement.strip()}+}}{full_text[span_end:]}"
+        else:
+            tracked = build_tracked_change_diff(full_text, candidate_full)
+    else:
+        tracked = build_tracked_change_diff(full_text, candidate_full)
     kept_str = ", ".join(f"'{k}'" for k in lock_check["kept_points"]) if lock_check["kept_points"] else "all core entities"
     note_prefix = "Rejected initial draft dropping must-keep point & regenerated; " if regenerated_due_to_lock else ""
     intent_note = (

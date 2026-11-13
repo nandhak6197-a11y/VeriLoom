@@ -295,7 +295,7 @@ def create_submission(
             content_type=req.content_type,
             raw_content=req.content,
             normalized_content=res["normalized_content"],
-            current_content=res["normalized_content"],
+            current_content=res.get("sanitized_content") or res["normalized_content"],
             creator_intent=req.creator_intent,
             must_keep_points_json=json.dumps(req.must_keep_points),
             origin=req.origin,
@@ -319,6 +319,8 @@ def create_submission(
                     "sha256": res["normalized_sha256"],
                 }
             ]),
+            created_by_actor=req.actor_name,
+            last_modified_by_actor=req.actor_name,
             created_at=now_iso,
         )
         db.add(asset)

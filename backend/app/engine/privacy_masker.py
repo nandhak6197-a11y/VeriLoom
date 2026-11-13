@@ -45,13 +45,13 @@ def mask_sensitive_content(
     emails_found = EMAIL_REGEX.findall(masked_text)
     if emails_found:
         pii_count += len(emails_found)
-        masked_text = EMAIL_REGEX.sub("[MASKED_EMAIL]", masked_text)
+        masked_text = EMAIL_REGEX.sub("[REDACTED_EMAIL]", masked_text)
 
     # 2. Mask phone numbers
     phones_found = PHONE_REGEX.findall(masked_text)
     if phones_found:
         pii_count += len(phones_found)
-        masked_text = PHONE_REGEX.sub("[MASKED_PHONE]", masked_text)
+        masked_text = PHONE_REGEX.sub("[REDACTED_PHONE]", masked_text)
 
     # 3. Mask confidential terms
     for term in confidential_terms:
@@ -61,13 +61,14 @@ def mask_sensitive_content(
         found = pattern.findall(masked_text)
         if found:
             confidential_count += len(found)
-            masked_text = pattern.sub("[MASKED_CONFIDENTIAL_TERM]", masked_text)
+            masked_text = pattern.sub("[REDACTED_PROJECT]", masked_text)
 
-    # 4. Detect OWASP LLM01 prompt injection patterns
+    # 4. Detect & sanitize OWASP LLM01 prompt injection patterns
     for pat in PROMPT_INJECTION_PATTERNS:
         m = pat.search(masked_text)
         if m:
             injection_matches.append(m.group(0))
+            masked_text = pat.sub("[INJECTION_STRIPPED]", masked_text)
 
     # Content is always sandboxed as quoted data so model treats it strictly as data, never instructions
     sandboxed_quoted_data = f"<QUOTED_SUBMISSION_DATA>\n{masked_text}\n</QUOTED_SUBMISSION_DATA>"

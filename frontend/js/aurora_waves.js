@@ -180,7 +180,31 @@
   let width = 0;
   let height = 0;
   let animId = null;
-  let isPaused = false;
+  let isScrollHidden = false;
+  let isTabHidden = false;
+  let startTime = performance.now();
+  let pausedAt = 0;
+
+  function pauseLoop() {
+    if (animId) {
+      cancelAnimationFrame(animId);
+      animId = null;
+    }
+    if (!pausedAt) {
+      pausedAt = performance.now();
+    }
+  }
+
+  function resumeLoop() {
+    if (isScrollHidden || isTabHidden) return;
+    if (pausedAt > 0) {
+      startTime += (performance.now() - pausedAt);
+      pausedAt = 0;
+    }
+    if (!animId) {
+      render();
+    }
+  }
 
   function resize() {
     // DPR capped at 1.5 for guaranteed 60fps performance
@@ -195,25 +219,76 @@
     }
   }
 
-  window.addEventListener('resize', resize, { passive: true });
-  resize();
+  /**
+   * Smooth OpenAI Codex Background Scroll Transition
+   * - Front page / Hero block (scrollY <= 30px): 100% full vibrant WebGL aurora animation.
+   * - As user scrolls down (30px -> 360px): smoothly transitions to solid obsidian black (#0A0B0E).
+   * - Scrolled sections (scrollY >= 360px): canvas is fully invisible (opacity 0) and WebGL rendering
+   *   is paused to save 100% of GPU/CPU cycles.
+   * - Scrolling back up smoothly restores the animated aurora.
+   */
+  function handleScrollTransition() {
+    let opacity = 1.0;
+
+    if (typeof window.__codexAuroraWeight === "number") {
+      opacity = Math.max(0.0, Math.min(1.0, window.__codexAuroraWeight));
+    } else {
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const fadeStart = 120;
+      const fadeEnd = Math.max(540, Math.floor((window.innerHeight || 900) * 0.85));
+
+      if (scrollY > fadeStart) {
+        const progress = Math.min(1.0, (scrollY - fadeStart) / (fadeEnd - fadeStart));
+        // Ease-out cubic curve (1 - progress^1.6) for organic layout transition
+        opacity = Math.max(0.0, 1.0 - Math.pow(progress, 1.6));
+      }
+    }
+
+    canvas.style.opacity = opacity.toFixed(3);
+
+    if (opacity <= 0.005) {
+      if (!isScrollHidden) {
+        isScrollHidden = true;
+        pauseLoop();
+      }
+    } else {
+      if (isScrollHidden) {
+        isScrollHidden = false;
+        resumeLoop();
+      }
+    }
+  }
+
+  let scrollTicking = false;
+  function onScrollOrResize() {
+    if (!scrollTicking) {
+      scrollTicking = true;
+      requestAnimationFrame(() => {
+        handleScrollTransition();
+        scrollTicking = false;
+      });
+    }
+  }
+
+  window.addEventListener('scroll', onScrollOrResize, { passive: true });
+  window.addEventListener('codex-stage-sync', handleScrollTransition);
+  window.addEventListener('resize', () => {
+    resize();
+    onScrollOrResize();
+  }, { passive: true });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      isPaused = true;
-      if (animId) cancelAnimationFrame(animId);
+      isTabHidden = true;
+      pauseLoop();
     } else {
-      isPaused = false;
-      startTime = performance.now() - pausedOffset;
-      render();
+      isTabHidden = false;
+      resumeLoop();
     }
   });
 
-  let startTime = performance.now();
-  let pausedOffset = 0;
-
   function render() {
-    if (isPaused) return;
+    if (isScrollHidden || isTabHidden) return;
 
     const currentTime = (performance.now() - startTime) * 0.001;
 
@@ -225,5 +300,8 @@
     animId = requestAnimationFrame(render);
   }
 
+  // Initial setup
+  resize();
+  handleScrollTransition();
   render();
 })();

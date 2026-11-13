@@ -137,6 +137,7 @@ def run_full_verification_pipeline(
         "original_sha256": original_sha256,
         "normalized_sha256": normalized_sha256,
         "normalized_content": normalized_text,
+        "sanitized_content": mask_res["masked_text"],
         "readability": readability,
         "overall_verdict": overall_verdict,
         "assigned_role": assigned_role,
