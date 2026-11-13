@@ -573,9 +573,25 @@ function updateTopChainBadge(isValid, totalEvents = null) {
       LAST_CHAIN_EVENT_COUNT !== null
         ? `SHA-256 Audit Ledger: ${LAST_CHAIN_EVENT_COUNT} blocks verified — Click to inspect`
         : "SHA-256 Audit Ledger Integrity Verified — Click to inspect";
-    navBadge.innerHTML = `<svg class="chain-badge-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        <path d="m9 12 2 2 4-4"/>
+    navBadge.innerHTML = `<svg class="chain-badge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="chain-5stack-grad" x1="0" y1="0" x2="0" y2="100%">
+            <stop offset="0%" stop-color="#E2E8F0" />
+            <stop offset="25%" stop-color="#86EFAC" />
+            <stop offset="50%" stop-color="#22C55E" />
+            <stop offset="75%" stop-color="#15803D" />
+            <stop offset="100%" stop-color="#052E16" />
+          </linearGradient>
+          <linearGradient id="chain-5stack-fill" x1="0" y1="0" x2="0" y2="100%">
+            <stop offset="0%" stop-color="#E2E8F0" stop-opacity="0.30" />
+            <stop offset="25%" stop-color="#86EFAC" stop-opacity="0.25" />
+            <stop offset="50%" stop-color="#22C55E" stop-opacity="0.20" />
+            <stop offset="75%" stop-color="#15803D" stop-opacity="0.16" />
+            <stop offset="100%" stop-color="#052E16" stop-opacity="0.12" />
+          </linearGradient>
+        </defs>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="url(#chain-5stack-fill)" stroke="url(#chain-5stack-grad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m9 12 2 2 4-4" stroke="url(#chain-5stack-grad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span class="chain-badge-text">Chain Verified</span>
       ${countBadgeHtml}`;
@@ -584,7 +600,7 @@ function updateTopChainBadge(isValid, totalEvents = null) {
       LAST_CHAIN_EVENT_COUNT !== null
         ? `TAMPER ALERT: Audit chain check failed across ${LAST_CHAIN_EVENT_COUNT} blocks — Click to inspect`
         : "TAMPER ALERT: Audit Ledger integrity mismatch detected — Click to inspect";
-    navBadge.innerHTML = `<svg class="chain-badge-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    navBadge.innerHTML = `<svg class="chain-badge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         <path d="M12 8v4"/>
         <path d="M12 16h.01"/>
