@@ -1424,8 +1424,13 @@ details.advanced-options[open] summary {
 }
 
 .btn:disabled {
-  opacity: 0.78;
-  cursor: wait;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn.is-loading,
+.btn[aria-busy="true"] {
+  cursor: wait !important;
 }
 
 /* Primary Button uses slightly dull matte champagne-stone with subtle inner shadow */
@@ -1986,6 +1991,10 @@ code {
   margin-top: 18px;
   word-break: break-word;
   box-shadow: var(--shadow-sm);
+}
+
+.receipt-box:empty {
+  display: none !important;
 }
 
 /* ============================================================================

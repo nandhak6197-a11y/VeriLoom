@@ -20,3 +20,6 @@ Thumbs.db
 
 *.exe
 .agents/
+
+.groq_keys
+scratch/

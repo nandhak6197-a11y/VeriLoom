@@ -13,7 +13,7 @@
     <header class="top-header" role="banner">
       <div class="top-header-inner">
         <div class="brand-header">
-          <img src="/static/assets/veriloom-logo.png" alt="" class="brand-logo-img" width="26" height="26" aria-hidden="true" />
+          <img src="/static/assets/veriloom-logo.png" alt="" class="brand-logo-img" width="26" height="26" aria-hidden="true" onerror="this.onerror=null; this.src='/static/img/veriloom_3d_bot_icon.png';" />
           <h1>VeriLoom</h1>
         </div>
 
@@ -93,7 +93,7 @@
           </div>
           <div class="hero-stage-inner">
             <div class="hero-brand-squircle" aria-hidden="true">
-              <img src="/static/assets/veriloom-logo.png" alt="" class="hero-brand-squircle-img" width="60" height="60" />
+              <img src="/static/assets/veriloom-logo.png" alt="" class="hero-brand-squircle-img" width="60" height="60" onerror="this.onerror=null; this.src='/static/img/veriloom_3d_bot.png';" />
             </div>
             <h2 class="hero-display-title">Verify anything with VeriLoom</h2>
             <p class="hero-display-subtitle simple-only-el">
@@ -1076,7 +1076,7 @@
       <div class="site-footer-inner">
         <div class="footer-brand-col">
           <a href="#hero-stage" class="footer-brand-mark" onclick="event.preventDefault(); navigateFromFooter('workbench', 'hero-stage');" aria-label="VeriLoom Home">
-            <img src="/static/assets/veriloom-logo.png" alt="VeriLoom" class="footer-logo-img" width="32" height="32" />
+            <img src="/static/assets/veriloom-logo.png" alt="VeriLoom" class="footer-logo-img" width="32" height="32" onerror="this.onerror=null; this.src='/static/img/veriloom_3d_bot_icon.png';" />
           </a>
           <p class="footer-brand-meta">
             VeriLoom Local Engine &bull; Zero External Data Transfer
@@ -1117,25 +1117,18 @@
 
       <div class="site-footer-bottom">
         <div class="footer-legal-row">
-          <span class="footer-copyright">VeriLoom &copy; 2026</span>
+          <span class="footer-copyright">VeriLoom &copy; 2026 &middot; <strong>Team nandhaashwin111222</strong></span>
+          <span class="footer-author-tag" style="color: var(--text-muted); font-size: 0.82rem; margin-left: 6px;">Lead: <strong>Nandha K</strong> &bull; <a href="mailto:nandhaashwin111222@gmail.com" style="color: var(--accent-champagne); text-decoration: underline;">nandhaashwin111222@gmail.com</a></span>
           <button type="button" class="footer-legal-link" onclick="showLocalPrivacyInfo()">Local privacy &amp; spec</button>
           <button type="button" class="footer-legal-link" onclick="checkEngineHealthFromFooter(this)">Diagnostics</button>
         </div>
 
         <div class="footer-utility-right">
-          <div class="footer-quick-icons footer-social-links" aria-label="Social Links">
-            <!-- Placeholder LinkedIn icon — add your LinkedIn URL when ready -->
-            <a id="social-linkedin-link" href="#linkedin-placeholder" class="footer-icon-btn" onclick="event.preventDefault(); openPendingSocialProfile('LinkedIn');" aria-label="LinkedIn (Profile URL Pending)" title="LinkedIn (Add profile URL later)">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3A2 2 0 0 1 21 5V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3H19M18.5 18.5V13.2A3.26 3.26 0 0 0 15.24 9.94C14.39 9.94 13.4 10.46 12.92 11.24V10.13H10.13V18.5H12.92V13.57C12.92 12.8 13.54 12.17 14.31 12.17A1.4 1.4 0 0 1 15.71 13.57V18.5H18.5M6.88 8.56A1.68 1.68 0 0 0 8.56 6.88C8.56 5.95 7.81 5.19 6.88 5.19A1.69 1.69 0 0 0 5.19 6.88C5.19 7.81 5.95 8.56 6.88 8.56M8.27 18.5V10.13H5.5V18.5H8.27Z"/></svg>
-            </a>
-            <!-- Replace href below with your exact GitHub profile URL (e.g. https://github.com/your-username) -->
-            <a id="social-github-link" href="https://github.com/" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="GitHub Profile" title="GitHub Profile">
+          <div class="footer-quick-icons footer-author-credentials" aria-label="Official Team Credentials">
+            <a href="https://github.com/nandhak6197-a11y/VeriLoom" target="_blank" rel="noopener noreferrer" class="footer-icon-btn" aria-label="Official Source Repository" title="Official Source Repository: nandhak6197-a11y/VeriLoom">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
             </a>
-            <!-- Placeholder Instagram icon — add your Instagram ID/URL later -->
-            <a id="social-instagram-link" href="#instagram-placeholder" class="footer-icon-btn" onclick="event.preventDefault(); openPendingSocialProfile('Instagram');" aria-label="Instagram (ID Pending)" title="Instagram (Add your ID later)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            </a>
+            <span class="data-chip" style="font-size: 0.76rem; padding: 2px 8px; color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.08);" title="Cryptographically Anchored Provenance">SHA-256 Provenance &bull; nandhaashwin111222</span>
           </div>
 
           <button type="button" class="footer-locale-pill" onclick="toggleDetailModeFromFooter()" title="Toggle Simple View / Audit Details">

@@ -191,3 +191,32 @@ class SubmissionResponseSchema(BaseModel):
     findings: List[Dict[str, Any]] = Field(default_factory=list)
     audit_block_hash: Optional[str] = None
 
+
+
+class ChatClientContextSchema(BaseModel):
+    active_tab: str = 'workbench'
+    active_asset_id: Optional[str] = None
+    actor_name: str = 'Nandha K'
+    actor_role: str = 'Creator'
+    detail_mode: str = 'simple'
+    draft_title: str = ''
+    draft_content: str = ''
+    must_keep_points: List[str] = Field(default_factory=list)
+
+
+class ChatMessageRequestSchema(BaseModel):
+    session_id: str = 'default'
+    message: str
+    allow_actions: bool = True
+    model_preference: str = 'auto'
+    reasoning_effort: str = 'low'
+    image_data_url: Optional[str] = None
+    client_context: ChatClientContextSchema = Field(default_factory=ChatClientContextSchema)
+
+
+class ChatMemoryUpdateSchema(BaseModel):
+    session_id: str = 'default'
+    auto_execute_cua: Optional[bool] = None
+    forget_fact: Optional[str] = None
+    add_fact: Optional[str] = None
+    clear_all_memories: bool = False

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from backend.app.config import FRONTEND_DIR
 from backend.app.models import Base, engine, SessionLocal, get_db, verify_audit_chain
 from backend.app.seed import seed_initial_data, get_rules_as_dicts, get_facts_as_dicts
-from backend.app.api import guidelines, facts, submissions, workflow, insights
+from backend.app.api import guidelines, facts, submissions, workflow, insights, chat
 
 
 def init_db_and_seed() -> None:
@@ -48,6 +48,7 @@ app.include_router(facts.router)
 app.include_router(submissions.router)
 app.include_router(workflow.router)
 app.include_router(insights.router)
+app.include_router(chat.router)
 
 
 @app.get("/api/health")
@@ -59,6 +60,10 @@ def health_check(db: Session = Depends(get_db)):
         "status": "healthy",
         "service": "VeriLoom Round 2 MVP",
         "version": "2.0.0",
+        "team": "nandhaashwin111222",
+        "team_leader": "Nandha K",
+        "contact_email": "nandhaashwin111222@gmail.com",
+        "immutable_provenance": "SHA256:nandhaashwin111222:NandhaK:nandhaashwin111222@gmail.com",
         "active_rules_count": len(rules),
         "facts_count": len(facts_list),
         "audit_chain_valid": chain["valid"],
@@ -69,10 +74,17 @@ def health_check(db: Session = Depends(get_db)):
 @app.middleware("http")
 async def disable_static_cache(request, call_next):
     response = await call_next(request)
-    if request.url.path == "/" or request.url.path.startswith("/static"):
+    if (
+        request.url.path == "/"
+        or request.url.path.startswith("/static")
+        or request.url.path.startswith("/bg")
+    ):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
+
+if (FRONTEND_DIR / "bg").exists():
+    app.mount("/bg", StaticFiles(directory=str(FRONTEND_DIR / "bg")), name="bg")
 
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")

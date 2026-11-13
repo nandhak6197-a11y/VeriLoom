@@ -2,8 +2,9 @@
 ## Finalist Submission Evaluation Report (100 / 100 Points)
 
 > **Submission Track**: Finalist Production Delivery  
+> **Final Working Project Link (Live Production Deployment)**: [https://veriloom-3d0g.onrender.com/](https://veriloom-3d0g.onrender.com/)  
 > **Source Repository**: [https://github.com/nandhak6197-a11y/VeriLoom](https://github.com/nandhak6197-a11y/VeriLoom) (`main` branch)  
-> **Live Production URL**: [https://elegant-barry-sport-mod.trycloudflare.com](https://elegant-barry-sport-mod.trycloudflare.com)  
+> **Final Product PDF Document**: [VeriLoom_Final_Product_Submission.pdf](../VeriLoom_Final_Product_Submission.pdf) (also in `docs/`)  
 > **Test Suite Status**: **106 / 106 Pytest Tests Passed (100%) Across 12 Modules**  
 > **Golden Benchmark Metrics**: **54 / 54 Runs Passed ($F_1 = 1.000$, Hallucination = $0.0\%$, Stability = $100\%$)**  
 > **Audit Chain State**: **Cryptographically Verified Append-Only Hash Chain (`audit_chain_valid: true`)**
