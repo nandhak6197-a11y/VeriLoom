@@ -382,7 +382,7 @@ def create_submission(
 
 
 @router.post("/upload-file")
-async def upload_document_submission(
+def upload_document_submission(
     file: UploadFile = File(...),
     title: str = Form("Uploaded Document"),
     creator_intent: str = Form(""),
@@ -393,7 +393,7 @@ async def upload_document_submission(
     db: Session = Depends(get_db),
 ):
     """Ingests .txt, .md, .docx, .pdf, or .png/.jpg files and runs the full verification pipeline (§5.2 Layer 1)."""
-    raw_bytes = await file.read()
+    raw_bytes = file.file.read()
     ingested = ingest_document_bytes(file.filename or "upload.txt", raw_bytes)
     mk_list = [p.strip() for p in must_keep_points.split(",") if p.strip()]
 

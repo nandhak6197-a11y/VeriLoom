@@ -1362,12 +1362,17 @@ async function uploadDocumentFile() {
   formData.append("origin", document.getElementById("sub-origin").value);
   formData.append("channel", document.getElementById("sub-channel").value);
 
+  const abortCtrl = new AbortController();
+  const timeoutTimer = setTimeout(() => abortCtrl.abort(), 25000);
+
   try {
     await pauseForVisualFeedback(280);
     const res = await fetch("/api/submissions/upload-file", {
       method: "POST",
       body: formData,
+      signal: abortCtrl.signal,
     });
+    clearTimeout(timeoutTimer);
     const data = await res.json();
     if (!res.ok) {
       showStatusMessage(data.detail || "File upload failed.", true);
@@ -1378,8 +1383,14 @@ async function uploadDocumentFile() {
     syncTopChainBadge();
     scrollToWorkflowSection("showcase-step-2");
   } catch (err) {
-    showStatusMessage(`Upload error: ${err.message}`, true);
+    clearTimeout(timeoutTimer);
+    if (err.name === "AbortError") {
+      showStatusMessage("Upload timed out (25s limit). Please try a smaller text or markdown document.", true);
+    } else {
+      showStatusMessage(`Upload error: ${err.message}`, true);
+    }
   } finally {
+    clearTimeout(timeoutTimer);
     restoreBtn();
     fileInput.value = "";
   }
