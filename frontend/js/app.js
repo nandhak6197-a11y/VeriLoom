@@ -1225,6 +1225,13 @@ function renderActiveSubmission(asset) {
 
   // Render AI Disclosure & Privacy Summary
   const rBox = document.getElementById("active-receipt-box");
+  if (!rBox) return;
+  if (!rc) {
+    rBox.style.display = "none";
+    rBox.innerHTML = "";
+    return;
+  }
+  rBox.style.display = "block";
   const modelsText = (rc.models_invoked && rc.models_invoked.length > 0)
     ? rc.models_invoked.join(", ")
     : "Local Deterministic Engine + 67M BERT-NLI";

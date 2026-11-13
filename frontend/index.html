@@ -13,7 +13,7 @@
     <header class="top-header" role="banner">
       <div class="top-header-inner">
         <div class="brand-header">
-          <img src="/static/assets/veriloom-logo.png" alt="" class="brand-logo-img" width="26" height="26" aria-hidden="true" onerror="this.onerror=null; this.src='/static/img/veriloom_3d_bot_icon.png';" />
+          <img src="/static/assets/veriloom-logo.png" alt="" class="brand-logo-img" width="26" height="26" aria-hidden="true" onerror="if (this.src.indexOf('veriloom_3d_bot') === -1) { this.src='/static/img/veriloom_3d_bot_icon.png'; } else { this.style.display='none'; }" />
           <h1>VeriLoom</h1>
         </div>
 
@@ -93,7 +93,7 @@
           </div>
           <div class="hero-stage-inner">
             <div class="hero-brand-squircle" aria-hidden="true">
-              <img src="/static/assets/veriloom-logo.png" alt="" class="hero-brand-squircle-img" width="60" height="60" onerror="this.onerror=null; this.src='/static/img/veriloom_3d_bot.png';" />
+              <img src="/static/assets/veriloom-logo.png" alt="" class="hero-brand-squircle-img" width="60" height="60" onerror="if (this.src.indexOf('veriloom_3d_bot') === -1) { this.src='/static/img/veriloom_3d_bot.png'; } else { this.style.display='none'; }" />
             </div>
             <h2 class="hero-display-title">Verify anything with VeriLoom</h2>
             <p class="hero-display-subtitle simple-only-el">
@@ -315,7 +315,7 @@
                   </div>
 
                   <!-- AI Verification & Privacy Summary -->
-                  <div id="active-receipt-box" class="receipt-box"></div>
+                  <div id="active-receipt-box" class="receipt-box" style="display: none;"></div>
                 </div>
               </section>
             </div>
@@ -1076,7 +1076,7 @@
       <div class="site-footer-inner">
         <div class="footer-brand-col">
           <a href="#hero-stage" class="footer-brand-mark" onclick="event.preventDefault(); navigateFromFooter('workbench', 'hero-stage');" aria-label="VeriLoom Home">
-            <img src="/static/assets/veriloom-logo.png" alt="VeriLoom" class="footer-logo-img" width="32" height="32" onerror="this.onerror=null; this.src='/static/img/veriloom_3d_bot_icon.png';" />
+            <img src="/static/assets/veriloom-logo.png" alt="VeriLoom" class="footer-logo-img" width="32" height="32" onerror="if (this.src.indexOf('veriloom_3d_bot') === -1) { this.src='/static/img/veriloom_3d_bot_icon.png'; } else { this.style.display='none'; }" />
           </a>
           <p class="footer-brand-meta">
             VeriLoom Local Engine &bull; Zero External Data Transfer

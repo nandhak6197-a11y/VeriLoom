@@ -1993,8 +1993,13 @@ code {
   box-shadow: var(--shadow-sm);
 }
 
-.receipt-box:empty {
+.receipt-box:empty,
+.receipt-box[data-empty="true"],
+#active-receipt-box:empty {
   display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
 }
 
 /* ============================================================================

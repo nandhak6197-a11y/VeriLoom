@@ -3,7 +3,10 @@
 
 > **Final Working Project Link (Live Production Deployment)**: [https://veriloom-3d0g.onrender.com/](https://veriloom-3d0g.onrender.com/)  
 > **Final Source-Code Repository**: [https://github.com/nandhak6197-a11y/VeriLoom](https://github.com/nandhak6197-a11y/VeriLoom) (`main` branch)  
-> **Final Product PDF Submission**: [VeriLoom_Final_Product_Submission.pdf](VeriLoom_Final_Product_Submission.pdf) (also in `docs/`)  
+> **Team**: **nandhaashwin111222** &middot; **Lead**: Nandha K &middot; **Email**: [nandhaashwin111222@gmail.com](mailto:nandhaashwin111222@gmail.com)  
+> **Round 1 Submission PDF (The Plan)**: [NexusCode_Round1_Submission_VeriLoom.pdf](NexusCode_Round1_Submission_VeriLoom.pdf) (also in `docs/`)  
+> **Round 2 Submission PDF**: [VeriLoom_Round2_Submission.pdf](VeriLoom_Round2_Submission.pdf) (also in `docs/`)  
+> **Final Round Product PDF Submission**: [VeriLoom_Final_Product_Submission.pdf](VeriLoom_Final_Product_Submission.pdf) (also in `docs/`)  
 > **Automated Pytest Suite**: **106 / 106 Tests Passed Across 12 Modules (100% Pass Rate)**  
 > **Golden Benchmark Evaluation**: **54 / 54 Runs Passed ($F_1 = 1.000$, Hallucination = $0.0\%$, Stability = $100\%$)**  
 > **Cryptographic Audit Ledger**: **SHA-256 Append-Only Hash Chain Verified (`audit_chain_valid: true`)**  
@@ -37,7 +40,9 @@ In traditional brand governance, organizations rely on static PDF brand books an
 ### B. Official Submission Package Checklist
 * [x] **Final Working Project Link**: [https://veriloom-3d0g.onrender.com/](https://veriloom-3d0g.onrender.com/) (Connected to live GitHub repo & Uptime Robot)
 * [x] **Final Source-Code Repository**: [https://github.com/nandhak6197-a11y/VeriLoom](https://github.com/nandhak6197-a11y/VeriLoom) (`main` branch)
-* [x] **Final Product PDF**: [`VeriLoom_Final_Product_Submission.pdf`](VeriLoom_Final_Product_Submission.pdf) (Available in repo root & `docs/`)
+* [x] **Round 1 Submission PDF (The Plan)**: [`NexusCode_Round1_Submission_VeriLoom.pdf`](NexusCode_Round1_Submission_VeriLoom.pdf) (Available in repo root & `docs/`)
+* [x] **Round 2 Submission PDF**: [`VeriLoom_Round2_Submission.pdf`](VeriLoom_Round2_Submission.pdf) (Available in repo root & `docs/`)
+* [x] **Final Product PDF (Round 3 Final Submission)**: [`VeriLoom_Final_Product_Submission.pdf`](VeriLoom_Final_Product_Submission.pdf) (Available in repo root & `docs/`)
 * [x] **Complete List of Features Built**: Section 4 below and Section 1 of Final Evaluation Report.
 * [x] **Technical Architecture & Implementation Summary**: Section 5 below (9-layer neuro-symbolic pipeline).
 * [x] **The Improvements Completed After Round 2**: Section 3 below (detailed breakdown of Improvements 1, 2, and 3).
