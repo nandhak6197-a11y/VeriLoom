@@ -206,11 +206,11 @@
                       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                       Verify Draft Now
                     </button>
-                    <label id="btn-upload-file" class="btn btn-dropzone" title="Upload .txt, .md, .docx, or .pdf document">
+                    <label id="btn-upload-file" for="file-upload-input" class="btn btn-dropzone" title="Upload .txt, .md, .docx, or .pdf document">
                       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                       <span id="upload-file-label-text">Upload Doc (.txt/.docx)</span>
-                      <input type="file" id="file-upload-input" accept=".txt,.md,.docx,.pdf" style="display: none;" onchange="uploadDocumentFile()" />
                     </label>
+                    <input type="file" id="file-upload-input" accept=".txt,.md,.docx,.pdf" style="display: none;" onchange="uploadDocumentFile()" />
                   </div>
                 </div>
               </section>

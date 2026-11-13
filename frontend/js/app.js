@@ -260,11 +260,15 @@ function setButtonLoading(btnEl, loadingText, useDarkSpinner = null) {
   if (!btnEl) return () => {};
   const origHtml = btnEl.innerHTML;
   btnEl.disabled = true;
+  btnEl.style.pointerEvents = "none";
+  btnEl.style.opacity = "0.75";
   const isDark = useDarkSpinner !== null ? useDarkSpinner : btnEl.classList.contains("btn-primary");
   const spinnerClass = isDark ? "spinner-inline" : "spinner-inline-light";
   btnEl.innerHTML = `<span class="${spinnerClass}" aria-hidden="true"></span><span>${escapeHtml(loadingText)}</span>`;
   return () => {
     btnEl.disabled = false;
+    btnEl.style.pointerEvents = "";
+    btnEl.style.opacity = "";
     btnEl.innerHTML = origHtml;
   };
 }
@@ -1347,11 +1351,8 @@ async function uploadDocumentFile() {
   if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
   const file = fileInput.files[0];
 
-  const uploadLabelText = document.getElementById("upload-file-label-text");
-  const origLabel = uploadLabelText ? uploadLabelText.innerHTML : "Upload Doc (.txt/.docx)";
-  if (uploadLabelText) {
-    uploadLabelText.innerHTML = `<span class="spinner-inline-light"></span> Uploading...`;
-  }
+  const uploadBtn = document.getElementById("btn-upload-file");
+  const restoreBtn = setButtonLoading(uploadBtn, "Uploading...", false);
 
   const formData = new FormData();
   formData.append("file", file);
@@ -1379,7 +1380,7 @@ async function uploadDocumentFile() {
   } catch (err) {
     showStatusMessage(`Upload error: ${err.message}`, true);
   } finally {
-    if (uploadLabelText) uploadLabelText.innerHTML = origLabel;
+    restoreBtn();
     fileInput.value = "";
   }
 }
