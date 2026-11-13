@@ -74,12 +74,15 @@ def ingest_document_bytes(filename: str, file_bytes: bytes) -> Dict[str, Any]:
             pages_text = []
             image_count = 0
             for page_idx, page in enumerate(doc):
+                if page_idx >= 5:
+                    metadata["page_cap_note"] = "Campaign copy capped to first 5 pages for rapid verification"
+                    break
                 t = page.get_text("text").strip()
                 if t:
                     pages_text.append(t)
                 image_count += len(page.get_images(full=True))
 
-            extracted_text = "\n\n".join(pages_text).strip()
+            extracted_text = "\n\n".join(pages_text).strip()[:8000]
 
             if not extracted_text.strip() and image_count > 0:
                 # Scanned or raster image PDF OCR fallback (§Round 3 Improvement 3)
