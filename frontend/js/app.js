@@ -261,10 +261,12 @@ function setButtonLoading(btnEl, loadingText, useDarkSpinner = null) {
   const origHtml = btnEl.innerHTML;
   btnEl.disabled = true;
   btnEl.style.pointerEvents = "none";
-  btnEl.style.opacity = "0.75";
+  btnEl.style.opacity = "0.78";
   const isDark = useDarkSpinner !== null ? useDarkSpinner : btnEl.classList.contains("btn-primary");
   const spinnerClass = isDark ? "spinner-inline" : "spinner-inline-light";
-  btnEl.innerHTML = `<span class="${spinnerClass}" aria-hidden="true"></span><span>${escapeHtml(loadingText)}</span>`;
+  const strokeOpacity = isDark ? "0.28" : "0.22";
+  const spinnerSvg = `<svg class="spinner-inline-svg ${spinnerClass}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="${strokeOpacity}" stroke-width="2.6"></circle><path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg>`;
+  btnEl.innerHTML = `${spinnerSvg}<span class="btn-loading-text">${escapeHtml(loadingText)}</span>`;
   return () => {
     btnEl.disabled = false;
     btnEl.style.pointerEvents = "";
@@ -1651,7 +1653,7 @@ async function uploadCustomBannerImage() {
   const labelEl = document.getElementById("custom-banner-upload-label");
   const origLabel = labelEl ? labelEl.innerHTML : "Upload Custom Banner (.png/.jpg)";
   if (labelEl) {
-    labelEl.innerHTML = `<span class="spinner-inline-light"></span> Auditing Image...`;
+    labelEl.innerHTML = `<svg class="spinner-inline-svg spinner-inline-light" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.22" stroke-width="2.6"></circle><path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg> <span class="btn-loading-text">Auditing Image...</span>`;
   }
   const resBox = document.getElementById("visual-audit-results");
   if (resBox) resBox.innerHTML = renderAreaLoader(`Auditing ${file.name} with CIEDE2000 & WCAG 2.1 contrast math...`);

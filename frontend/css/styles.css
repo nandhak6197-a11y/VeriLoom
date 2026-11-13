@@ -1574,31 +1574,66 @@ details.advanced-options[open] summary {
 /* ============================================================================
    Modern Spinners & Area Loading Overlays
    ============================================================================ */
-.spinner-inline {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(26, 28, 32, 0.22);
-  border-top-color: #1A1C20;
-  border-radius: 50%;
-  animation: spinLoader 0.72s linear infinite;
+.spinner-inline-svg {
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  min-height: 15px;
+  max-width: 15px;
+  max-height: 15px;
   display: inline-block;
+  vertical-align: middle;
   flex-shrink: 0;
-  transition: opacity 0.2s var(--ease-smooth);
+  animation: spinLoader 0.72s linear infinite;
+  transform-origin: center center;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: none !important;
+  line-height: 1;
 }
 
+.spinner-inline-svg circle {
+  fill: none;
+}
+
+.spinner-inline-svg path {
+  fill: none;
+}
+
+.btn-loading-text {
+  text-decoration: none !important;
+  display: inline-block;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.spinner-inline,
 .spinner-inline-light {
+  box-sizing: border-box;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.20);
-  border-top-color: currentColor;
   border-radius: 50%;
   animation: spinLoader 0.72s linear infinite;
   display: inline-block;
+  vertical-align: middle;
   flex-shrink: 0;
-  transition: opacity 0.2s var(--ease-smooth);
+  overflow: hidden;
+  contain: paint;
+  transform-origin: center center;
+}
+
+span.spinner-inline {
+  border: 2px solid rgba(26, 28, 32, 0.22);
+  border-top-color: #1A1C20;
+}
+
+span.spinner-inline-light {
+  border: 2px solid rgba(255, 255, 255, 0.20);
+  border-top-color: currentColor;
 }
 
 .spinner-light {
+  box-sizing: border-box;
   width: 24px;
   height: 24px;
   border: 2.5px solid rgba(255, 255, 255, 0.14);
@@ -1606,7 +1641,11 @@ details.advanced-options[open] summary {
   border-radius: 50%;
   animation: spinLoader 0.76s linear infinite;
   display: inline-block;
+  vertical-align: middle;
   flex-shrink: 0;
+  overflow: hidden;
+  contain: paint;
+  transform-origin: center center;
 }
 
 .area-loader {
@@ -2116,6 +2155,12 @@ code {
   font-weight: 400;
   cursor: pointer;
   margin: 0;
+  text-decoration: none !important;
+  user-select: none;
+}
+
+.btn-dropzone * {
+  text-decoration: none !important;
 }
 
 .btn-dropzone:hover:not(:disabled) {
