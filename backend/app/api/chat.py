@@ -50,12 +50,16 @@ def post_chat_message(
     db: Session = Depends(get_db),
 ):
     """Processes a Copilot turn with memory extraction, reasoning steps, and optional CUA action plans."""
-    if not req.message or not req.message.strip():
-        raise HTTPException(status_code=400, detail="Chat message cannot be empty.")
+    user_msg = (req.message or "").strip()
+    if not user_msg:
+        if req.image_data_url:
+            user_msg = "Please analyze and audit this uploaded image for brand compliance, WCAG contrast, CIEDE2000 color fidelity, and regulatory safety."
+        else:
+            raise HTTPException(status_code=400, detail="Chat message cannot be empty.")
     return process_chat_turn(
         db=db,
         session_id=req.session_id,
-        user_message=req.message,
+        user_message=user_msg,
         allow_actions=req.allow_actions,
         client_context=req.client_context.model_dump(),
         model_preference=req.model_preference,

@@ -5217,6 +5217,28 @@ p code {
   color: #FFFFFF;
 }
 
+.copilot-new-chat-btn {
+  width: auto !important;
+  height: 28px;
+  padding: 0 10px;
+  gap: 6px;
+  font-family: var(--font-copilot-sf);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #CBD5E1;
+}
+
+.copilot-new-chat-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+}
+
+.copilot-new-chat-label {
+  white-space: nowrap;
+}
+
 /* Workflow Connectivity Strip */
 .copilot-workflow-strip {
   display: flex;
@@ -5867,6 +5889,7 @@ p code {
   align-items: center;
   gap: 7px;
   min-width: 0;
+  position: relative;
 }
 
 .copilot-composer-right {
@@ -5892,10 +5915,198 @@ p code {
 }
 
 .copilot-plus-btn:hover,
-.copilot-mic-btn:hover {
+.copilot-mic-btn:hover,
+.copilot-plus-btn.is-active,
+.copilot-plus-btn[aria-expanded="true"] {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.14);
   color: #FFFFFF;
+}
+
+/* Copilot Attachment Popover - Sleek rectangle box matching chat box color, font, and dull white text */
+.copilot-attachment-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 172px;
+  background: linear-gradient(180deg, #27292E 0%, #1F2126 100%);
+  border: 1.5px solid #454850;
+  border-radius: 8px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.82),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 1000;
+  animation: copilotPopoverFadeIn 0.15s ease-out;
+}
+
+.copilot-attachment-popover.hidden {
+  display: none !important;
+}
+
+@keyframes copilotPopoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.copilot-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #CBD5E1; /* Dull white */
+  font-family: var(--font-copilot-sf);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.copilot-popover-item .copilot-popover-icon {
+  color: #CBD5E1; /* Dull white */
+  flex-shrink: 0;
+  transition: color 0.16s ease;
+}
+
+.copilot-popover-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+}
+
+.copilot-popover-item:hover .copilot-popover-icon {
+  color: #FFFFFF;
+}
+
+.copilot-popover-label {
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
+/* Staged Image Preview Bar inside Composer */
+.copilot-image-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  background: rgba(18, 20, 24, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+.copilot-image-preview-bar.hidden {
+  display: none !important;
+}
+
+.copilot-preview-thumb-wrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.copilot-preview-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+  background: #000;
+}
+
+.copilot-preview-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.copilot-preview-name {
+  font-family: var(--font-copilot-sf);
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #E2E8F0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copilot-preview-size {
+  font-family: var(--font-copilot-sf);
+  font-size: 0.67rem;
+  color: #94A3B8;
+}
+
+.copilot-preview-remove-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94A3B8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.copilot-preview-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+}
+
+/* User Message Bubble Image Thumbnail */
+.copilot-user-img-box {
+  margin-bottom: 8px;
+  border-radius: 7px;
+  overflow: hidden;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.copilot-user-img-thumb {
+  max-width: 220px;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.45);
+  display: block;
+}
+
+.copilot-user-img-tag {
+  font-family: var(--font-copilot-sf);
+  font-size: 0.68rem;
+  color: rgba(203, 213, 225, 0.75);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
 }
 
 .copilot-mic-btn.is-recording {

@@ -185,3 +185,68 @@ def test_audit_log_hash_chain_verification():
     assert chain["valid"] is True
     assert chain["total_events"] >= 4
     assert len(chain["broken_links"]) == 0
+
+
+def test_copilot_multimodal_vision_image_upload():
+    """
+    Verifies Copilot multimodal vision analysis with image upload,
+    ensuring prolonged proper response, 5-stage project-grounded guidance,
+    and automatic empty-message prompt inference.
+    """
+    import base64
+    from PIL import Image
+
+    # 1. Create a 64x64 test image
+    img = Image.new("RGB", (64, 64), color=(15, 43, 72))  # Northwind Navy
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    data_url = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
+
+    # 2. Test sending with explicit user message
+    resp = client.post(
+        "/api/chat/message",
+        json={
+            "session_id": "test-multimodal-vision",
+            "message": "Audit this image for brand compliance and WCAG contrast.",
+            "allow_actions": False,
+            "client_context": {
+                "active_tab": "visual",
+                "active_asset_id": "AST-VIS-001",
+                "actor_name": "Nandha K",
+                "actor_role": "Creator",
+                "detail_mode": "simple",
+            },
+            "image_data_url": data_url,
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    reply = data["reply"]
+
+    # Verify prolonged structured response with project-relevant guidance
+    assert "Visual Composition" in reply or "Brand Presence" in reply
+    assert "WCAG" in reply or "Contrast" in reply
+    assert "Palette" in reply or "CIEDE2000" in reply
+    assert "Guideline" in reply or "Regulatory" in reply or "AST" in reply
+    assert "Guidance" in reply or "Suggestions" in reply
+    assert len(data.get("reasoning_steps", [])) >= 2
+
+    # 3. Test sending with empty message (should auto-infer audit prompt, no 400)
+    resp_empty = client.post(
+        "/api/chat/message",
+        json={
+            "session_id": "test-multimodal-vision-empty",
+            "message": "",
+            "allow_actions": False,
+            "client_context": {
+                "active_tab": "workbench",
+                "active_asset_id": "",
+                "actor_name": "Nandha K",
+                "actor_role": "Creator",
+                "detail_mode": "simple",
+            },
+            "image_data_url": data_url,
+        },
+    )
+    assert resp_empty.status_code == 200
+    assert len(resp_empty.json()["reply"]) > 100

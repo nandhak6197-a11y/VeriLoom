@@ -153,6 +153,11 @@ def test_copilot_dom_contract():
     assert 'id="copilot-input"' in html
     assert 'id="copilot-send-btn"' in html
     assert 'id="copilot-messages"' in html
+    assert 'id="copilot-plus-btn"' in html
+    assert 'id="copilot-attachment-popover"' in html
+    assert 'id="copilot-action-add-image"' in html
+    assert 'id="copilot-image-file-input"' in html
+    assert 'id="copilot-image-preview-bar"' in html
 
 
 def test_all_html_onclick_handlers_exist_in_js():

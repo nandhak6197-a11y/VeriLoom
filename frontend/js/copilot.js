@@ -1,12 +1,35 @@
 /* VeriLoom AI Copilot v2.0: 25-Key Groq Reasoning, Voice STT, Memory, Cross-Page Connectivity & CUA */
 (function () {
   const SESSION_STORAGE_KEY = "veriloom_copilot_session_id";
+
+  function generateUniqueSessionId() {
+    const rand = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID().replace(/-/g, "").slice(0, 12)
+      : Math.random().toString(36).substring(2, 12);
+    return `vl_${Date.now().toString(36)}_${rand}`;
+  }
+
+  function getOrInitSessionId() {
+    try {
+      let sid = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!sid || sid === "veriloom-default" || sid === "default") {
+        sid = generateUniqueSessionId();
+        sessionStorage.setItem(SESSION_STORAGE_KEY, sid);
+      }
+      return sid;
+    } catch {
+      return generateUniqueSessionId();
+    }
+  }
+
   const STATE = {
-    sessionId: localStorage.getItem(SESSION_STORAGE_KEY) || "veriloom-default",
+    sessionId: getOrInitSessionId(),
     isOpen: false,
     isSending: false,
     autoAct: true,
     memoryOpen: false,
+    attachmentPopoverOpen: false,
+    stagedImage: null,
     isRecording: false,
     mediaRecorder: null,
     mediaStream: null,
@@ -16,7 +39,6 @@
     workflowSnapshot: null,
     messages: [],
   };
-  localStorage.setItem(SESSION_STORAGE_KEY, STATE.sessionId);
 
   const $ = (id) => document.getElementById(id);
 
@@ -242,12 +264,13 @@
 
     const stages = [{ title: "Checking the request.", page: "", detail: "", state: "done" }];
     for (const st of reasoningSteps || []) {
-      const title = String(st.title || "").trim();
+      const rawTitle = typeof st === "object" && st !== null ? st.title : st;
+      const title = String(rawTitle || "").trim();
       if (!title || /^checking the request\.?$/i.test(title) || /^done$/i.test(title)) continue;
       stages.push({
         title,
-        page: st.page || "",
-        detail: st.detail || "",
+        page: (typeof st === "object" && st !== null ? st.page : "") || "",
+        detail: (typeof st === "object" && st !== null ? st.detail : "") || "",
         state: "done",
       });
     }
@@ -424,10 +447,19 @@
     return wrap;
   }
 
-  function createUserMessageNode(text) {
+  function createUserMessageNode(text, imageInfo = null) {
     const wrap = document.createElement("div");
     wrap.className = "copilot-msg copilot-msg-user";
-    wrap.innerHTML = `<div class="copilot-user-bubble">${esc(text)}</div>`;
+    let imgHtml = "";
+    if (imageInfo && imageInfo.dataUrl) {
+      imgHtml = `
+        <div class="copilot-user-img-box">
+          <img src="${esc(imageInfo.dataUrl)}" alt="${esc(imageInfo.name || 'Uploaded visual')}" class="copilot-user-img-thumb" />
+          ${imageInfo.name ? `<div class="copilot-user-img-tag">${esc(imageInfo.name)}</div>` : ""}
+        </div>
+      `;
+    }
+    wrap.innerHTML = `<div class="copilot-user-bubble">${imgHtml}<div class="copilot-user-text">${esc(text)}</div></div>`;
     return wrap;
   }
 
@@ -447,7 +479,12 @@
 
     for (const m of STATE.messages) {
       if (m.role === "user") {
-        container.appendChild(createUserMessageNode(m.content));
+        container.appendChild(
+          createUserMessageNode(
+            m.content,
+            m.image_info || (m.image_data_url ? { dataUrl: m.image_data_url } : null)
+          )
+        );
       } else {
         const node = createAssistantMessageNode({
           content: m.content,
@@ -860,8 +897,110 @@
     }
   }
 
+  function formatFileSize(bytes) {
+    if (!bytes || bytes <= 0) return "0 KB";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function renderStagedImagePreview() {
+    const bar = $("copilot-image-preview-bar");
+    if (!bar) return;
+    if (!STATE.stagedImage) {
+      bar.innerHTML = "";
+      bar.classList.add("hidden");
+      return;
+    }
+    const { dataUrl, name, size } = STATE.stagedImage;
+    bar.innerHTML = `
+      <div class="copilot-preview-thumb-wrap">
+        <img src="${esc(dataUrl)}" alt="${esc(name)}" class="copilot-preview-thumb" />
+        <div class="copilot-preview-meta">
+          <span class="copilot-preview-name">${esc(name)}</span>
+          <span class="copilot-preview-size">${formatFileSize(size)} · Vision audit ready</span>
+        </div>
+      </div>
+      <button type="button" class="copilot-preview-remove-btn" id="copilot-remove-staged-img" title="Remove attached image" aria-label="Remove attached image">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    bar.classList.remove("hidden");
+    const removeBtn = $("copilot-remove-staged-img");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", () => {
+        clearStagedImage();
+        const input = $("copilot-input");
+        if (input) input.focus();
+      });
+    }
+  }
+
+  function clearStagedImage() {
+    STATE.stagedImage = null;
+    const fileInput = $("copilot-image-file-input");
+    if (fileInput) fileInput.value = "";
+    renderStagedImagePreview();
+  }
+
+  function toggleAttachmentPopover(show = null) {
+    const popover = $("copilot-attachment-popover");
+    const plusBtn = $("copilot-plus-btn");
+    const next = show !== null ? Boolean(show) : !STATE.attachmentPopoverOpen;
+    STATE.attachmentPopoverOpen = next;
+    if (popover) {
+      if (next) popover.classList.remove("hidden");
+      else popover.classList.add("hidden");
+    }
+    if (plusBtn) {
+      plusBtn.setAttribute("aria-expanded", next ? "true" : "false");
+      if (next) plusBtn.classList.add("is-active");
+      else plusBtn.classList.remove("is-active");
+    }
+  }
+
+  function handleImageFileSelected(file) {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith("image/")) {
+      notifyToast("Please select a valid image file (PNG, JPEG, WebP, SVG).", true);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      notifyToast("Image size exceeds 10MB limit.", true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      STATE.stagedImage = {
+        dataUrl: ev.target.result,
+        name: file.name,
+        size: file.size,
+      };
+      renderStagedImagePreview();
+      const input = $("copilot-input");
+      if (input) {
+        input.focus();
+        if (!input.value.trim()) {
+          input.placeholder = "Ask about this visual or press Enter to audit...";
+        }
+      }
+      notifyToast(`Attached ${file.name} for multimodal vision audit.`);
+    };
+    reader.onerror = () => {
+      notifyToast("Failed to read image file.", true);
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function sendCopilotMessage(rawText) {
-    const text = String(rawText || "").trim();
+    let text = String(rawText || "").trim();
+    const stagedImg = STATE.stagedImage;
+
+    // If text is empty but image is attached, provide a high-quality audit prompt
+    if (!text && stagedImg) {
+      text = "Please analyze and audit this uploaded image for brand compliance, WCAG contrast, CIEDE2000 color fidelity, and regulatory safety.";
+    }
+
     if (!text || STATE.isSending) return;
 
     const messagesEl = $("copilot-messages");
@@ -879,9 +1018,14 @@
     if (inputEl) {
       inputEl.value = "";
       inputEl.style.height = "auto";
+      inputEl.placeholder = "Do anything";
     }
 
-    messagesEl.appendChild(createUserMessageNode(text));
+    // Capture image to send and clear staging
+    const sendingImage = stagedImg;
+    clearStagedImage();
+
+    messagesEl.appendChild(createUserMessageNode(text, sendingImage));
     const startedAt = performance.now();
     let lastStageIdx = 0;
     const pendingNode = createAssistantMessageNode({
@@ -924,6 +1068,7 @@
             model_preference,
             reasoning_effort,
             client_context: getLiveClientContext(),
+            image_data_url: sendingImage ? sendingImage.dataUrl : null,
           }),
         }),
         minShimmerDelay,
@@ -937,7 +1082,11 @@
       STATE.memoryProfile = data.memory_profile;
       STATE.workflowLinks = data.workflow_links || [];
       STATE.workflowSnapshot = data.workflow_snapshot || STATE.workflowSnapshot;
-      STATE.messages.push({ role: "user", content: text });
+      STATE.messages.push({
+        role: "user",
+        content: text,
+        image_info: sendingImage,
+      });
       STATE.messages.push({
         id: data.message_id,
         role: "assistant",
@@ -1048,6 +1197,9 @@
     const tabSelect = $("copilot-tab-select");
     const copilotRoleSelect = $("copilot-role-select");
     const plusBtn = $("copilot-plus-btn");
+    const addImgAction = $("copilot-action-add-image");
+    const attachCtxAction = $("copilot-action-attach-context");
+    const imageFileInput = $("copilot-image-file-input");
     const micBtn = $("copilot-mic-btn");
     const form = $("copilot-form");
     const input = $("copilot-input");
@@ -1075,10 +1227,33 @@
     }
     if (clearBtn) {
       clearBtn.addEventListener("click", async () => {
-        await fetch(`/api/chat/session?session_id=${encodeURIComponent(STATE.sessionId)}&keep_memory=true`, {
-          method: "DELETE",
-        });
+        const oldSid = STATE.sessionId;
+        try {
+          await fetch(`/api/chat/session?session_id=${encodeURIComponent(oldSid)}&keep_memory=true`, {
+            method: "DELETE",
+          });
+        } catch {}
+
+        // Assign brand-new unique session ID for Option 2
+        const nextSid = generateUniqueSessionId();
+        STATE.sessionId = nextSid;
+        try {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, nextSid);
+        } catch {}
+
+        // Reset composer & attachments
+        STATE.messages = [];
+        clearStagedImage();
+        const input = $("copilot-input");
+        if (input) {
+          input.value = "";
+          input.style.height = "auto";
+          input.placeholder = "Do anything";
+        }
+
+        // Reload clean conversation state
         await refreshCopilotSession(true);
+        notifyToast("Started fresh conversation session.");
       });
     }
     if (autoActBtn) {
@@ -1113,8 +1288,41 @@
       });
     }
     if (plusBtn) {
-      plusBtn.addEventListener("click", attachCurrentContextToInput);
+      plusBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        toggleAttachmentPopover();
+      });
     }
+    if (addImgAction && imageFileInput) {
+      addImgAction.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        toggleAttachmentPopover(false);
+        imageFileInput.click();
+      });
+    }
+    if (attachCtxAction) {
+      attachCtxAction.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        toggleAttachmentPopover(false);
+        attachCurrentContextToInput();
+      });
+    }
+    if (imageFileInput) {
+      imageFileInput.addEventListener("change", (ev) => {
+        if (ev.target.files && ev.target.files[0]) {
+          handleImageFileSelected(ev.target.files[0]);
+        }
+      });
+    }
+
+    document.addEventListener("click", (ev) => {
+      if (STATE.attachmentPopoverOpen) {
+        const composerLeft = ev.target && ev.target.closest && ev.target.closest(".copilot-composer-left");
+        if (!composerLeft) {
+          toggleAttachmentPopover(false);
+        }
+      }
+    });
     if (micBtn) {
       micBtn.addEventListener("click", toggleMicRecording);
     }
