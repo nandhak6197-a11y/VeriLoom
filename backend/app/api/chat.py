@@ -54,6 +54,9 @@ def post_chat_message(
     if not user_msg:
         if req.image_data_url:
             user_msg = "Please analyze and audit this uploaded image for brand compliance, WCAG contrast, CIEDE2000 color fidelity, and regulatory safety."
+        elif req.document_data_url:
+            doc_name = req.document_filename or "document"
+            user_msg = f"Please analyze and audit this uploaded document ({doc_name}) for brand compliance, AST regulatory rules, prohibited claims, and Fact Vault verification."
         else:
             raise HTTPException(status_code=400, detail="Chat message cannot be empty.")
     return process_chat_turn(
@@ -65,6 +68,8 @@ def post_chat_message(
         model_preference=req.model_preference,
         reasoning_effort=req.reasoning_effort,
         image_data_url=req.image_data_url,
+        document_data_url=req.document_data_url,
+        document_filename=req.document_filename,
     )
 
 

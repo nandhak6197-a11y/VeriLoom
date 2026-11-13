@@ -29,6 +29,7 @@
     autoAct: true,
     memoryOpen: false,
     attachmentPopoverOpen: false,
+    stagedAttachment: null,
     stagedImage: null,
     isRecording: false,
     mediaRecorder: null,
@@ -447,19 +448,30 @@
     return wrap;
   }
 
-  function createUserMessageNode(text, imageInfo = null) {
+  function createUserMessageNode(text, attachmentInfo = null) {
     const wrap = document.createElement("div");
     wrap.className = "copilot-msg copilot-msg-user";
-    let imgHtml = "";
-    if (imageInfo && imageInfo.dataUrl) {
-      imgHtml = `
-        <div class="copilot-user-img-box">
-          <img src="${esc(imageInfo.dataUrl)}" alt="${esc(imageInfo.name || 'Uploaded visual')}" class="copilot-user-img-thumb" />
-          ${imageInfo.name ? `<div class="copilot-user-img-tag">${esc(imageInfo.name)}</div>` : ""}
-        </div>
-      `;
+    let attachHtml = "";
+    if (attachmentInfo && (attachmentInfo.dataUrl || attachmentInfo.name)) {
+      if (attachmentInfo.kind === "document" || attachmentInfo.ext === "pdf" || attachmentInfo.ext === "docx" || attachmentInfo.ext === "txt" || attachmentInfo.ext === "md") {
+        const ext = (attachmentInfo.ext || "doc").toLowerCase();
+        attachHtml = `
+          <div class="copilot-user-doc-chip">
+            <span class="copilot-doc-badge is-${esc(ext)}">${esc(ext.toUpperCase())}</span>
+            <span class="copilot-user-doc-name" title="${esc(attachmentInfo.name || 'Document')}">${esc(attachmentInfo.name || 'Document')}</span>
+            <span class="copilot-user-doc-size">${formatFileSize(attachmentInfo.size)}</span>
+          </div>
+        `;
+      } else if (attachmentInfo.dataUrl) {
+        attachHtml = `
+          <div class="copilot-user-img-box">
+            <img src="${esc(attachmentInfo.dataUrl)}" alt="${esc(attachmentInfo.name || 'Uploaded visual')}" class="copilot-user-img-thumb" />
+            ${attachmentInfo.name ? `<div class="copilot-user-img-tag">${esc(attachmentInfo.name)}</div>` : ""}
+          </div>
+        `;
+      }
     }
-    wrap.innerHTML = `<div class="copilot-user-bubble">${imgHtml}<div class="copilot-user-text">${esc(text)}</div></div>`;
+    wrap.innerHTML = `<div class="copilot-user-bubble">${attachHtml}<div class="copilot-user-text">${esc(text)}</div></div>`;
     return wrap;
   }
 
@@ -897,6 +909,9 @@
     }
   }
 
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB safe limit for Render cloud memory
+  const MAX_DOC_BYTES = 10 * 1024 * 1024;  // 10MB safe limit for Render cloud memory
+
   function formatFileSize(bytes) {
     if (!bytes || bytes <= 0) return "0 KB";
     if (bytes < 1024) return bytes + " B";
@@ -904,43 +919,71 @@
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   }
 
-  function renderStagedImagePreview() {
+  function renderStagedAttachmentPreview() {
     const bar = $("copilot-image-preview-bar");
     if (!bar) return;
-    if (!STATE.stagedImage) {
+    const item = STATE.stagedAttachment;
+    if (!item) {
       bar.innerHTML = "";
       bar.classList.add("hidden");
       return;
     }
-    const { dataUrl, name, size } = STATE.stagedImage;
-    bar.innerHTML = `
-      <div class="copilot-preview-thumb-wrap">
-        <img src="${esc(dataUrl)}" alt="${esc(name)}" class="copilot-preview-thumb" />
-        <div class="copilot-preview-meta">
-          <span class="copilot-preview-name">${esc(name)}</span>
-          <span class="copilot-preview-size">${formatFileSize(size)} · Vision audit ready</span>
+    const { kind, dataUrl, name, size, ext } = item;
+    if (kind === "document") {
+      const extUpper = (ext || "doc").toUpperCase();
+      bar.innerHTML = `
+        <div class="copilot-preview-thumb-wrap">
+          <span class="copilot-doc-badge is-${esc(ext)}">${esc(extUpper)}</span>
+          <div class="copilot-preview-meta">
+            <span class="copilot-preview-name">${esc(name)}</span>
+            <span class="copilot-preview-size">${formatFileSize(size)} · 9-Layer AST & Fact Vault ready</span>
+          </div>
         </div>
-      </div>
-      <button type="button" class="copilot-preview-remove-btn" id="copilot-remove-staged-img" title="Remove attached image" aria-label="Remove attached image">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    `;
+        <button type="button" class="copilot-preview-remove-btn" id="copilot-remove-staged-attachment" title="Remove attached document" aria-label="Remove attached document">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+    } else {
+      bar.innerHTML = `
+        <div class="copilot-preview-thumb-wrap">
+          <img src="${esc(dataUrl)}" alt="${esc(name)}" class="copilot-preview-thumb" />
+          <div class="copilot-preview-meta">
+            <span class="copilot-preview-name">${esc(name)}</span>
+            <span class="copilot-preview-size">${formatFileSize(size)} · Multimodal vision audit ready</span>
+          </div>
+        </div>
+        <button type="button" class="copilot-preview-remove-btn" id="copilot-remove-staged-attachment" title="Remove attached image" aria-label="Remove attached image">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+    }
     bar.classList.remove("hidden");
-    const removeBtn = $("copilot-remove-staged-img");
+    const removeBtn = $("copilot-remove-staged-attachment");
     if (removeBtn) {
       removeBtn.addEventListener("click", () => {
-        clearStagedImage();
+        clearStagedAttachment();
         const input = $("copilot-input");
         if (input) input.focus();
       });
     }
   }
 
-  function clearStagedImage() {
+  function clearStagedAttachment() {
+    STATE.stagedAttachment = null;
     STATE.stagedImage = null;
-    const fileInput = $("copilot-image-file-input");
-    if (fileInput) fileInput.value = "";
-    renderStagedImagePreview();
+    const imgInput = $("copilot-image-file-input");
+    if (imgInput) imgInput.value = "";
+    const docInput = $("copilot-doc-file-input");
+    if (docInput) docInput.value = "";
+    renderStagedAttachmentPreview();
+  }
+
+  // Alias for backward compatibility
+  function renderStagedImagePreview() {
+    renderStagedAttachmentPreview();
+  }
+  function clearStagedImage() {
+    clearStagedAttachment();
   }
 
   function toggleAttachmentPopover(show = null) {
@@ -965,18 +1008,22 @@
       notifyToast("Please select a valid image file (PNG, JPEG, WebP, SVG).", true);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      notifyToast("Image size exceeds 10MB limit.", true);
+    if (file.size > MAX_IMAGE_BYTES) {
+      notifyToast("Image exceeds safe cloud limit of 5MB for rapid analysis. Please choose an image under 5MB.", true);
       return;
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      STATE.stagedImage = {
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
+      STATE.stagedAttachment = {
+        kind: "image",
         dataUrl: ev.target.result,
         name: file.name,
         size: file.size,
+        ext,
       };
-      renderStagedImagePreview();
+      STATE.stagedImage = STATE.stagedAttachment;
+      renderStagedAttachmentPreview();
       const input = $("copilot-input");
       if (input) {
         input.focus();
@@ -984,7 +1031,7 @@
           input.placeholder = "Ask about this visual or press Enter to audit...";
         }
       }
-      notifyToast(`Attached ${file.name} for multimodal vision audit.`);
+      notifyToast(`Attached ${file.name} (Max 5MB safe) for multimodal vision audit.`);
     };
     reader.onerror = () => {
       notifyToast("Failed to read image file.", true);
@@ -992,13 +1039,55 @@
     reader.readAsDataURL(file);
   }
 
+  function handleDocFileSelected(file) {
+    if (!file) return;
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    const validExts = ["pdf", "docx", "txt", "md"];
+    if (!validExts.includes(ext)) {
+      notifyToast("Please select a supported document file (PDF, DOCX, TXT, MD).", true);
+      return;
+    }
+    if (file.size > MAX_DOC_BYTES) {
+      notifyToast("Document exceeds safe cloud limit of 10MB for rapid analysis. Please choose a document under 10MB.", true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      STATE.stagedAttachment = {
+        kind: "document",
+        dataUrl: ev.target.result,
+        name: file.name,
+        size: file.size,
+        ext,
+      };
+      STATE.stagedImage = null;
+      renderStagedAttachmentPreview();
+      const input = $("copilot-input");
+      if (input) {
+        input.focus();
+        if (!input.value.trim()) {
+          input.placeholder = "Ask about this document or press Enter to audit...";
+        }
+      }
+      notifyToast(`Attached ${file.name} (Max 10MB safe) for 9-layer compliance audit.`);
+    };
+    reader.onerror = () => {
+      notifyToast("Failed to read document file.", true);
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function sendCopilotMessage(rawText) {
     let text = String(rawText || "").trim();
-    const stagedImg = STATE.stagedImage;
+    const staged = STATE.stagedAttachment;
 
-    // If text is empty but image is attached, provide a high-quality audit prompt
-    if (!text && stagedImg) {
-      text = "Please analyze and audit this uploaded image for brand compliance, WCAG contrast, CIEDE2000 color fidelity, and regulatory safety.";
+    // If text is empty but attachment is staged, provide a high-quality audit prompt
+    if (!text && staged) {
+      if (staged.kind === "image") {
+        text = "Please analyze and audit this uploaded image for brand compliance, WCAG contrast, CIEDE2000 color fidelity, and regulatory safety.";
+      } else {
+        text = `Please analyze and audit this uploaded document (${staged.name || "document"}) for brand compliance, AST regulatory rules, prohibited claims, and Fact Vault verification.`;
+      }
     }
 
     if (!text || STATE.isSending) return;
@@ -1021,11 +1110,11 @@
       inputEl.placeholder = "Do anything";
     }
 
-    // Capture image to send and clear staging
-    const sendingImage = stagedImg;
-    clearStagedImage();
+    // Capture attachment to send and clear staging
+    const sendingAttachment = staged;
+    clearStagedAttachment();
 
-    messagesEl.appendChild(createUserMessageNode(text, sendingImage));
+    messagesEl.appendChild(createUserMessageNode(text, sendingAttachment));
     const startedAt = performance.now();
     let lastStageIdx = 0;
     const pendingNode = createAssistantMessageNode({
@@ -1068,7 +1157,9 @@
             model_preference,
             reasoning_effort,
             client_context: getLiveClientContext(),
-            image_data_url: sendingImage ? sendingImage.dataUrl : null,
+            image_data_url: sendingAttachment && sendingAttachment.kind === "image" ? sendingAttachment.dataUrl : null,
+            document_data_url: sendingAttachment && sendingAttachment.kind === "document" ? sendingAttachment.dataUrl : null,
+            document_filename: sendingAttachment && sendingAttachment.kind === "document" ? sendingAttachment.name : null,
           }),
         }),
         minShimmerDelay,
@@ -1085,7 +1176,7 @@
       STATE.messages.push({
         role: "user",
         content: text,
-        image_info: sendingImage,
+        attachment_info: sendingAttachment,
       });
       STATE.messages.push({
         id: data.message_id,
@@ -1198,8 +1289,9 @@
     const copilotRoleSelect = $("copilot-role-select");
     const plusBtn = $("copilot-plus-btn");
     const addImgAction = $("copilot-action-add-image");
-    const attachCtxAction = $("copilot-action-attach-context");
+    const addDocAction = $("copilot-action-add-doc");
     const imageFileInput = $("copilot-image-file-input");
+    const docFileInput = $("copilot-doc-file-input");
     const micBtn = $("copilot-mic-btn");
     const form = $("copilot-form");
     const input = $("copilot-input");
@@ -1243,7 +1335,7 @@
 
         // Reset composer & attachments
         STATE.messages = [];
-        clearStagedImage();
+        clearStagedAttachment();
         const input = $("copilot-input");
         if (input) {
           input.value = "";
@@ -1300,17 +1392,24 @@
         imageFileInput.click();
       });
     }
-    if (attachCtxAction) {
-      attachCtxAction.addEventListener("click", (ev) => {
+    if (addDocAction && docFileInput) {
+      addDocAction.addEventListener("click", (ev) => {
         ev.stopPropagation();
         toggleAttachmentPopover(false);
-        attachCurrentContextToInput();
+        docFileInput.click();
       });
     }
     if (imageFileInput) {
       imageFileInput.addEventListener("change", (ev) => {
         if (ev.target.files && ev.target.files[0]) {
           handleImageFileSelected(ev.target.files[0]);
+        }
+      });
+    }
+    if (docFileInput) {
+      docFileInput.addEventListener("change", (ev) => {
+        if (ev.target.files && ev.target.files[0]) {
+          handleDocFileSelected(ev.target.files[0]);
         }
       });
     }

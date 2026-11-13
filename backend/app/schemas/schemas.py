@@ -211,6 +211,8 @@ class ChatMessageRequestSchema(BaseModel):
     model_preference: str = 'auto'
     reasoning_effort: str = 'low'
     image_data_url: Optional[str] = None
+    document_data_url: Optional[str] = None
+    document_filename: Optional[str] = None
     client_context: ChatClientContextSchema = Field(default_factory=ChatClientContextSchema)
 
 

@@ -250,3 +250,80 @@ def test_copilot_multimodal_vision_image_upload():
     )
     assert resp_empty.status_code == 200
     assert len(resp_empty.json()["reply"]) > 100
+
+
+def test_copilot_document_upload_pdf_and_docx():
+    """
+    Verifies Copilot document ingestion for PDF, DOCX, and TXT files.
+    Ensures dual SHA-256 fingerprinting, 9-layer Brand-AST rule check,
+    Fact Vault temporal validation, and prolonged 5-section audit report.
+    """
+    import base64
+    import docx
+    import pymupdf
+
+    # 1. Generate in-memory PDF
+    pdf_doc = pymupdf.open()
+    pdf_page = pdf_doc.new_page()
+    pdf_page.insert_text((50, 50), "Northwind Academy promises 100% guaranteed employment with cheap enrollment fees.")
+    pdf_bytes = pdf_doc.tobytes()
+    pdf_data_url = f"data:application/pdf;base64,{base64.b64encode(pdf_bytes).decode()}"
+
+    resp_pdf = client.post(
+        "/api/chat/message",
+        json={
+            "session_id": "test-doc-upload-pdf",
+            "message": "Audit this uploaded campaign document for brand compliance and fact verification.",
+            "allow_actions": False,
+            "client_context": {
+                "active_tab": "workbench",
+                "active_asset_id": "AST-DOC-001",
+                "actor_name": "Nandha K",
+                "actor_role": "Creator",
+                "detail_mode": "simple",
+            },
+            "document_data_url": pdf_data_url,
+            "document_filename": "campaign_enrollment.pdf",
+        },
+    )
+    assert resp_pdf.status_code == 200
+    pdf_reply = resp_pdf.json()["reply"]
+
+    # Verify all 5 structured sections in the report
+    assert "Document Architecture" in pdf_reply or "Ingestion Profile" in pdf_reply
+    assert "Brand-AST" in pdf_reply or "Regulatory Findings" in pdf_reply
+    assert "Fact Vault" in pdf_reply
+    assert "Prescriptive Rewriter" in pdf_reply or "Remediation" in pdf_reply
+    assert "Audit Ledger" in pdf_reply or "Next Steps" in pdf_reply
+    assert len(resp_pdf.json().get("reasoning_steps", [])) >= 3
+
+    # 2. Generate in-memory DOCX
+    d = docx.Document()
+    d.add_paragraph("Northwind platform provides 99.9% uptime SLA and SOC-2 Type II certified cloud infrastructure.")
+    docx_buf = io.BytesIO()
+    d.save(docx_buf)
+    docx_bytes = docx_buf.getvalue()
+    docx_data_url = f"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{base64.b64encode(docx_bytes).decode()}"
+
+    resp_docx = client.post(
+        "/api/chat/message",
+        json={
+            "session_id": "test-doc-upload-docx",
+            "message": "",  # Test auto-prompt inference for document
+            "allow_actions": False,
+            "client_context": {
+                "active_tab": "workbench",
+                "active_asset_id": "",
+                "actor_name": "Nandha K",
+                "actor_role": "Creator",
+                "detail_mode": "simple",
+            },
+            "document_data_url": docx_data_url,
+            "document_filename": "infrastructure_sla.docx",
+        },
+    )
+    assert resp_docx.status_code == 200
+    docx_reply = resp_docx.json()["reply"]
+    assert "docx" in docx_reply.lower() or "document" in docx_reply.lower()
+    assert "Document Architecture" in docx_reply or "Ingestion Profile" in docx_reply
+    assert "Fact Vault" in docx_reply

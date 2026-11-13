@@ -145,8 +145,11 @@ def test_audit_ledger_dom_contract():
 
 def test_copilot_dom_contract():
     html_path = os.path.join("frontend", "index.html")
+    css_path = os.path.join("frontend", "css", "styles.css")
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
+    with open(css_path, "r", encoding="utf-8") as f:
+        css = f.read()
 
     assert 'id="chatbox-overlay"' in html or 'id="copilot-overlay"' in html
     assert 'id="copilot-close-btn"' in html
@@ -156,8 +159,19 @@ def test_copilot_dom_contract():
     assert 'id="copilot-plus-btn"' in html
     assert 'id="copilot-attachment-popover"' in html
     assert 'id="copilot-action-add-image"' in html
+    assert 'id="copilot-action-add-doc"' in html
     assert 'id="copilot-image-file-input"' in html
+    assert 'id="copilot-doc-file-input"' in html
     assert 'id="copilot-image-preview-bar"' in html
+    assert "Max 5MB" in html
+    assert "Max 10MB" in html
+
+    # Button styles & inner shadows
+    assert ".copilot-rail-btn" in css
+    assert "inset" in css
+    assert ".copilot-auto-act-pill.is-on" in css
+    assert ".copilot-doc-badge" in css
+    assert ".copilot-user-doc-chip" in css
 
 
 def test_all_html_onclick_handlers_exist_in_js():

@@ -5092,8 +5092,22 @@ p code {
   width: 100%;
   justify-content: center;
   padding: 5px 6px !important;
-  border-radius: 5px !important;
+  border-radius: 6px !important;
   font-size: 0.68rem !important;
+  font-family: var(--font-copilot-sf);
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #E2E8F0 !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.65), inset 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.copilot-rail-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
 }
 
 /* INNER CHAT SYSTEM AREA (Semi-Curved Top-Left Corner, Connected Flush to Right & Bottom Edges) */
@@ -5928,14 +5942,14 @@ p code {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
-  min-width: 172px;
+  min-width: 215px;
   background: linear-gradient(180deg, #27292E 0%, #1F2126 100%);
   border: 1.5px solid #454850;
   border-radius: 8px;
-  padding: 5px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   box-shadow:
     0 14px 34px rgba(0, 0, 0, 0.82),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -5963,7 +5977,7 @@ p code {
 .copilot-popover-item {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   width: 100%;
   padding: 7px 10px;
   border-radius: 6px;
@@ -5971,9 +5985,6 @@ p code {
   background: transparent;
   color: #CBD5E1; /* Dull white */
   font-family: var(--font-copilot-sf);
-  font-size: 0.76rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
   cursor: pointer;
   text-align: left;
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
@@ -5995,9 +6006,35 @@ p code {
   color: #FFFFFF;
 }
 
+.copilot-popover-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1.5px;
+}
+
 .copilot-popover-label {
-  flex: 1 1 auto;
+  font-family: var(--font-copilot-sf);
+  font-size: 0.77rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #E2E8F0;
   white-space: nowrap;
+}
+
+.copilot-popover-sub {
+  font-family: var(--font-copilot-sf);
+  font-size: 0.63rem;
+  color: #94A3B8;
+  white-space: nowrap;
+}
+
+.copilot-popover-item:hover .copilot-popover-label {
+  color: #FFFFFF;
+}
+
+.copilot-popover-item:hover .copilot-popover-sub {
+  color: #CBD5E1;
 }
 
 /* Staged Image Preview Bar inside Composer */
@@ -6109,6 +6146,73 @@ p code {
   max-width: 220px;
 }
 
+/* Staged Document Badge & User Message Document Chip */
+.copilot-doc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  font-family: var(--font-copilot-sf);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  background: #2A2D35;
+  color: #E2E8F0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.copilot-doc-badge.is-pdf {
+  background: rgba(239, 68, 68, 0.2);
+  color: #FCA5A5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.copilot-doc-badge.is-docx {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93C5FD;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.copilot-doc-badge.is-txt,
+.copilot-doc-badge.is-md {
+  background: rgba(148, 163, 184, 0.2);
+  color: #CBD5E1;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.copilot-user-doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  margin-bottom: 6px;
+  font-family: var(--font-copilot-sf);
+  max-width: 100%;
+}
+
+.copilot-user-doc-chip .copilot-user-doc-name {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #E2E8F0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.copilot-user-doc-chip .copilot-user-doc-size {
+  font-size: 0.66rem;
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
 .copilot-mic-btn.is-recording {
   color: #FCA5A5;
   background: rgba(239, 68, 68, 0.22);
@@ -6164,9 +6268,20 @@ p code {
 }
 
 .copilot-auto-act-pill.is-on {
-  background: rgba(52, 211, 153, 0.14);
-  border-color: rgba(52, 211, 153, 0.36);
-  color: #A7F3D0;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #E2E8F0 !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.72), inset 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+.copilot-auto-act-pill.is-on .copilot-cua-dot {
+  background: #34D399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.85);
+}
+
+.copilot-auto-act-pill:not(.is-on) .copilot-cua-dot {
+  background: #64748B;
+  box-shadow: none;
 }
 
 .copilot-cua-dot {
