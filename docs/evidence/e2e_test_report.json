@@ -1,0 +1,139 @@
+{
+  "phases": {
+    "Phase 1 - Transparent Chip": {
+      "status": "PASS",
+      "chip_text": "[valid_from, valid_until]",
+      "background_color": "rgba(255, 255, 255, 0.08)",
+      "font_family": "\"OpenAI Sans\", \"OpenAI Sans Variable Scripts\", Inter, sans-serif",
+      "screenshot": "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\01_fact_vault_hero_transparent_chip.png"
+    },
+    "Phase 2 - Fact Vault Custom Input": {
+      "status": "PASS",
+      "fact_id": "F-E2E-2026",
+      "backend_persisted": true,
+      "status_in_db": "ACTIVE"
+    },
+    "Phase 3 - Review Workbench": {
+      "status": "PASS",
+      "input_copy": "Northwind data foundations course completes in 12 weeks with 100% guarantee.",
+      "pipeline_executed": true,
+      "file_uploaded": "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\scratch\\sample_marketing_doc.txt",
+      "latest_submission_id": "AST-9484C5"
+    },
+    "Phase 4 - Banner & Contrast": {
+      "status": "PASS",
+      "custom_banner_uploaded": "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\scratch\\sample_banner.png",
+      "screenshot": "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\08_banner_contrast_lab.png"
+    },
+    "Phase 5 - Guideline Lab": {
+      "status": "PASS",
+      "screenshot": "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\09_guideline_lab_ast_specs.png"
+    },
+    "Phase 6 - Metrics & ROR": {
+      "status": "PASS",
+      "screenshot": "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\10_metrics_ror_scorecard.png"
+    },
+    "Phase 7 - Audit Ledger": {
+      "status": "PASS",
+      "audit_chain_valid": true,
+      "total_events": 360
+    },
+    "Phase 8 - Copilot": {
+      "status": "PASS",
+      "streaming_verified": true,
+      "modal_closed_cleanly": true
+    }
+  },
+  "screenshots": [
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\01_fact_vault_hero_transparent_chip.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\02_fact_vault_toast_gold_bar.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\03_fact_vault_fact_expired.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\04_fact_vault_fact_reactivated.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\05_workbench_custom_input.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\06_workbench_findings_expired_fact.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\07_workbench_surgical_fix_accepted.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\07b_workbench_file_uploaded.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\08_banner_contrast_lab.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\09_guideline_lab_ast_specs.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\10_metrics_ror_scorecard.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\11_audit_ledger_verified_chain.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\12_audit_ledger_tamper_attack_detected.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\13_audit_ledger_chain_restored.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\14_copilot_streaming_response.png",
+    "C:\\Users\\NANDHA K\\.gemini\\antigravity\\brain\\19154c08-4fad-4e25-87e1-3b50b39a50a7\\browser_evidence\\e2e_live\\15_copilot_closed_clean_workbench.png"
+  ],
+  "backend_reflections": {
+    "fact_vault": {
+      "fact_id": "F-E2E-2026",
+      "tenant": "northwind_academy",
+      "category": "outcomes",
+      "subject": "Global Cloud Network",
+      "predicate": "achieved",
+      "metric": "99.99% uptime guarantee",
+      "modality": "strict",
+      "statement": "Global Cloud Network delivers a 99.99% uptime guarantee across all enterprise zones in 2026.",
+      "owner": "Nandha K",
+      "source": "Brand Admin Governance Entry",
+      "valid_from": "2026-01-01",
+      "valid_until": "2027-12-31",
+      "status": "ACTIVE"
+    },
+    "latest_submission": {
+      "asset_id": "AST-9484C5",
+      "tenant": "northwind_academy",
+      "title": "Uploaded: sample_marketing_doc.txt",
+      "content_type": "text",
+      "raw_content": "Northwind Cloud Foundations launches nationwide with 10 weeks curriculum and 99.9% uptime SLA.\nCertified brand approved content.",
+      "normalized_content": "Northwind Cloud Foundations launches nationwide with 10 weeks curriculum and 99.9% uptime SLA.\nCertified brand approved content.",
+      "current_content": "Northwind Cloud Foundations launches nationwide with 10 weeks curriculum and 99.9% uptime SLA.\nCertified brand approved content.",
+      "creator_intent": "",
+      "must_keep_points": [],
+      "origin": "ai_generated",
+      "channel": "social",
+      "status": "IN_MANAGER_REVIEW",
+      "assigned_role": "Brand Manager",
+      "overall_verdict": "PASS",
+      "original_sha256": "7a3df5e7682800bceb01c7e47e6ed02fb0fa4dea25b7cad602018fbe1ef22b59",
+      "normalized_sha256": "7a3df5e7682800bceb01c7e47e6ed02fb0fa4dea25b7cad602018fbe1ef22b59",
+      "approved_sha256": "",
+      "approved_by": "",
+      "approved_at": "",
+      "rule_set_version": "v1.0.0",
+      "receipt": {
+        "deterministic_checks_local": true,
+        "pii_masked_count": 0,
+        "confidential_terms_masked_count": 0,
+        "injection_attempts_blocked": 0,
+        "models_invoked": [],
+        "external_data_sent": false,
+        "rule_set_version": "v1.0.0",
+        "citation_hashes_verified": true,
+        "summary_text": "Deterministic checks ran locally. PII masked (0 items); confidential terms masked (0 items). Rule citations verified and hashed into the append-only audit ledger."
+      },
+      "revisions": [
+        {
+          "version": 1,
+          "timestamp": "2026-11-13T07:50:41.304424+00:00",
+          "author": "Creator User",
+          "role": "Creator",
+          "note": "Initial submission",
+          "content": "Northwind Cloud Foundations launches nationwide with 10 weeks curriculum and 99.9% uptime SLA.\nCertified brand approved content.",
+          "sha256": "7a3df5e7682800bceb01c7e47e6ed02fb0fa4dea25b7cad602018fbe1ef22b59"
+        }
+      ],
+      "created_at": "2026-11-13T07:52:55.479669+00:00",
+      "findings_count": 0,
+      "findings": []
+    },
+    "audit_chain": {
+      "status": "healthy",
+      "service": "VeriLoom Round 2 MVP",
+      "version": "2.0.0",
+      "active_rules_count": 18,
+      "facts_count": 11,
+      "audit_chain_valid": true,
+      "audit_events_count": 360
+    }
+  },
+  "success": true
+}
